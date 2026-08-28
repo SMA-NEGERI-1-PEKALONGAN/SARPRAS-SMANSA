@@ -594,26 +594,38 @@ new #[Layout('layouts.app')] #[Title('Manajemen Barang (Inventaris)')] class ext
                             kode_barang, nama_barang, kategori, jumlah_total, deskripsi, bisa_dipinjam, icon
                         </div>
                     </div>
-                    <div>
-                        <strong>Catatan Import:</strong>
+                    <div
+                        class="mt-2 mb-4 p-3 text-xs border rounded-xl border-indigo-100 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-300">
 
-                        <ul class="mt-1 space-y-1 list-disc list-inside">
-                            <li>
-                                <strong>kode ruangan</strong> dan
-                                <strong>name</strong> wajib diisi.
-                            </li>
-                            <li><span class="font-bold">kategori:</span> Elektronik, Olahraga, Laboratorium, Buku,
-                                Lainnya.</li>
-                            <li><span class="font-bold">izin:</span> 1 atau TRUE (Bisa Dipinjam), 0 atau FALSE (Tidak).
-                            </li>
-                            <li>
-                                CSV dapat menggunakan pemisah
-                                <strong>koma (,)</strong> atau
-                                <strong>titik koma (;)</strong>.
-                            </li>
-                        </ul>
+                        <div class="flex gap-2">
+
+                            <i class="mt-0.5 fa-solid fa-circle-info"></i>
+
+                            <div>
+                                <strong>Catatan Import:</strong>
+
+                                <ul class="mt-1 space-y-1 list-disc list-inside">
+                                     <li>
+                                        <strong>kode ruangan</strong> dan
+                                        <strong>name</strong> wajib diisi.
+                                    </li>
+                                    <li><span class="font-bold">kategori:</span> Elektronik, Olahraga, Laboratorium, Buku,
+                                        Lainnya.</li>
+                                    <li><span class="font-bold">izin:</span> 1 atau TRUE (Bisa Dipinjam), 0 atau FALSE (Tidak).
+                                    </li>
+                                    <li>
+                                        CSV dapat menggunakan pemisah
+                                        <strong>koma (,)</strong> atau
+                                        <strong>titik koma (;)</strong>.
+                                    </li>
+                                </ul>
+
+                            </div>
+
+                        </div>
 
                     </div>
+                    
                     <form wire:submit="importData" class="space-y-4">
                         <div>
                             <input type="file" wire:model="importFile" accept=".csv,.txt"

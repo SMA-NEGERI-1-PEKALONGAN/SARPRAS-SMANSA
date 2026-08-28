@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
-    Volt::route('home', 'pages::user.home')->name('home');
+   Volt::route('/home', 'pages::user.home')->name('home');
 });
 
 /*
@@ -16,6 +16,10 @@ Route::get('/', function () {
 */
 Volt::route('/login', 'pages::auth.login')->name('login');
 Volt::route('/home', 'pages::user.home')->name('home');
+Volt::route('booking', 'pages::user.booking')->name('booking');
+Volt::route('history', 'pages::user.history')->name('history');
+Volt::route('account/settings', 'pages::user.settings')->name('account.settings');
+
 
 Route::get('/logout', function () {
     Auth::logout();

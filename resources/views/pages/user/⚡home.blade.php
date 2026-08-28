@@ -45,83 +45,52 @@ new
     {{-- ========================================================= --}}
     {{-- HERO --}}
     {{-- ========================================================= --}}
-    <section
-        class="relative pt-12 pb-20 overflow-hidden
-               lg:pt-20 lg:pb-32
-               transition-colors duration-300"
-    >
+    <section id="hero" class="relative overflow-hidden pt-24 pb-20 sm:pt-28 lg:pt-32 lg:pb-32 transition-colors duration-300" >
 
         {{-- Background --}}
-        <div
-            class="absolute top-1/4 -left-20
+        <div class="absolute top-1/4 -left-20
                    w-72 h-72
                    bg-blue-500/10 dark:bg-blue-500/20
                    rounded-full blur-3xl
-                   pointer-events-none"
-        ></div>
+                   pointer-events-none"></div>
 
-        <div
-            class="absolute top-1/3 -right-20
+        <div class="absolute top-1/3 -right-20
                    w-80 h-80
                    bg-indigo-500/10 dark:bg-indigo-500/20
                    rounded-full blur-3xl
-                   pointer-events-none"
-        ></div>
+                   pointer-events-none"></div>
 
-        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-            <div class="grid items-center gap-12 lg:grid-cols-12 lg:gap-8">
+        <div class="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8"> 
+            <div class="grid w-full min-w-0 items-center gap-10 sm:gap-12 lg:grid-cols-12 lg:gap-8">
 
                 {{-- ================================================= --}}
                 {{-- HERO CONTENT --}}
                 {{-- ================================================= --}}
-                <div
-                    class="space-y-6 text-center
-                           lg:col-span-7 lg:text-left"
-                >
+                <div class=" w-full min-w-0 space-y-6 text-center lg:col-span-7 lg:text-left">
 
                     <div
-                        class="inline-flex items-center gap-2
-                               px-4 py-2 rounded-full
-                               bg-blue-50 dark:bg-blue-900/30
-                               border border-blue-100 dark:border-blue-800
-                               text-blue-700 dark:text-blue-300
-                               text-sm font-medium"
-                    >
-                        <span
-                            class="flex w-2 h-2
+                        class="mx-auto inline-flex max-w-full items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 sm:px-4 sm:text-sm lg:mx-0">
+                        <span class="flex w-2 h-2
                                    rounded-full
                                    bg-blue-600 dark:bg-blue-400
-                                   animate-pulse"
-                        ></span>
-
-                        Sistem Peminjaman Ruang
-                        Instan & Transparan
+                                   animate-pulse"></span>
+                        Sistem Peminjaman Ruang Instan & Transparan
                     </div>
 
-                    <h1
-                        class="text-4xl sm:text-5xl lg:text-6xl
-                               font-extrabold
-                               text-slate-900 dark:text-white
-                               leading-tight"
-                    >
+                    <h1 class="text-[2.25rem] leading-[1.1] font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-5xl lg:text-6xl">
                         Pinjam Ruangan
-                        <span
-                            class="bg-gradient-to-r
+                        <span class="bg-gradient-to-r
                                    from-blue-600 to-indigo-600
                                    dark:from-blue-400 dark:to-indigo-400
-                                   bg-clip-text text-transparent"
-                        >
+                                   bg-clip-text text-transparent">
                             Tanpa Ribet.
                         </span>
                     </h1>
 
-                    <p
-                        class="max-w-2xl mx-auto
+                    <p class="max-w-2xl mx-auto
                                text-lg leading-relaxed
                                text-slate-600 dark:text-slate-400
-                               lg:mx-0"
-                    >
+                               lg:mx-0">
                         Cek ketersediaan laboratorium, aula,
                         ruang kelas, dan fasilitas lainnya secara
                         real-time. Ajukan peminjaman dengan cepat,
@@ -129,17 +98,12 @@ new
                     </p>
 
                     {{-- CTA --}}
-                    <div
-                        class="flex flex-col items-center
+                    <div class="flex flex-col items-center
                                justify-center gap-4 pt-2
                                sm:flex-row
-                               lg:justify-start"
-                    >
+                               lg:justify-start">
 
-                        <button
-                            type="button"
-                            wire:click="goToBooking"
-                            class="w-full sm:w-auto
+                        <button type="button" wire:click="goToBooking" class="w-full sm:w-auto
                                    px-8 py-4 rounded-xl
                                    font-semibold text-white
                                    bg-gradient-to-r
@@ -150,18 +114,12 @@ new
                                    hover:-translate-y-0.5
                                    transition-all
                                    flex items-center
-                                   justify-center gap-3"
-                        >
+                                   justify-center gap-3">
                             <i class="text-lg fa-solid fa-calendar-check"></i>
-
-                            <span>
-                                Mulai Peminjaman
-                            </span>
+                            <span>Mulai Peminjaman</span>
                         </button>
 
-                        <a
-                            href="#alur"
-                            class="flex items-center
+                        <a href="#alur" class="flex items-center
                                    justify-center gap-2
                                    w-full sm:w-auto
                                    px-8 py-4 rounded-xl
@@ -171,89 +129,48 @@ new
                                    border border-slate-200 dark:border-slate-700
                                    hover:bg-slate-50
                                    dark:hover:bg-slate-700
-                                   transition-all"
-                        >
-                            <i
-                                class="text-blue-600
-                                       dark:text-blue-400
-                                       fa-solid fa-circle-play"
-                            ></i>
-
+                                   transition-all">
+                            <i class="text-blue-600 dark:text-blue-400 fa-solid fa-circle-play"></i>
                             Pelajari Alur
                         </a>
-
                     </div>
 
                     {{-- Statistics --}}
-                    <div
-                        class="grid grid-cols-3 gap-4
+                    {{-- FIX: Mengecilkan gap di mobile (gap-2) agar isi tidak meluap ke samping --}}
+                    <div class="grid grid-cols-3 gap-2 sm:gap-4
                             pt-8
                             text-center lg:text-left
                             border-t
                             border-slate-200/80
-                            dark:border-slate-700/80"
-                    >
+                            dark:border-slate-700/80">
 
                         <div>
-
-                            <p
-                                class="text-2xl sm:text-3xl
-                                    font-bold
-                                    text-slate-900 dark:text-white"
-                            >
+                            <p class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
                                 {{ $totalRooms }}
                             </p>
-
-                            <p
-                                class="text-xs sm:text-sm
-                                    font-medium
-                                    text-slate-500 dark:text-slate-400"
-                            >
+                            {{-- FIX: Mengecilkan ukuran teks label (text-[10px]) di mobile --}}
+                            <p class="text-[10px] sm:text-sm font-medium text-slate-500 dark:text-slate-400">
                                 Total Ruangan
                             </p>
-
                         </div>
 
                         <div>
-
-                            <p
-                                class="text-2xl sm:text-3xl
-                                    font-bold
-                                    text-slate-900 dark:text-white"
-                            >
+                            <p class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
                                 {{ $availableRooms }}
                             </p>
-
-                            <p
-                                class="text-xs sm:text-sm
-                                    font-medium
-                                    text-slate-500 dark:text-slate-400"
-                            >
+                            <p class="text-[10px] sm:text-sm font-medium text-slate-500 dark:text-slate-400">
                                 Bisa Dipinjam
                             </p>
-
                         </div>
 
                         <div>
-
-                            <p
-                                class="text-2xl sm:text-3xl
-                                    font-bold
-                                    text-slate-900 dark:text-white"
-                            >
+                            <p class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
                                 24/7
                             </p>
-
-                            <p
-                                class="text-xs sm:text-sm
-                                    font-medium
-                                    text-slate-500 dark:text-slate-400"
-                            >
+                            <p class="text-[10px] sm:text-sm font-medium text-slate-500 dark:text-slate-400">
                                 Akses Sistem
                             </p>
-
                         </div>
-
                     </div>
 
                 </div>
@@ -261,15 +178,12 @@ new
                 {{-- ================================================= --}}
                 {{-- PREVIEW CARD --}}
                 {{-- ================================================= --}}
-                <div class="relative lg:col-span-5">
-
-                    <div class="relative mx-auto max-w-md lg:max-w-none">
+                <div class="relative min-w-0 lg:col-span-5"> <div class="relative mx-auto w-full max-w-md lg:max-w-none">
 
                         {{-- ================================================= --}}
                         {{-- MAIN CARD --}}
                         {{-- ================================================= --}}
-                        <div
-                            class="relative p-6
+                        <div class="relative p-6
                                 bg-white dark:bg-slate-800
                                 rounded-3xl
                                 shadow-2xl
@@ -277,249 +191,92 @@ new
                                 dark:shadow-black/50
                                 border
                                 border-slate-100
-                                dark:border-slate-700"
-                        >
+                                dark:border-slate-700">
 
-                            {{-- ================================================= --}}
                             {{-- CARD HEADER --}}
-                            {{-- ================================================= --}}
-                            <div
-                                class="flex items-center justify-between pb-4
-                                    border-b
-                                    border-slate-100
-                                    dark:border-slate-700"
-                            >
-
+                            <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700">
                                 <div class="flex items-center gap-2">
                                     <span class="w-3 h-3 bg-rose-500 rounded-full"></span>
                                     <span class="w-3 h-3 bg-amber-500 rounded-full"></span>
                                     <span class="w-3 h-3 bg-emerald-500 rounded-full"></span>
                                 </div>
 
-                                <span
-                                    class="px-2.5 py-1
-                                        rounded-md
-                                        text-xs font-semibold
-                                        bg-emerald-50
-                                        dark:bg-emerald-500/10
-                                        text-emerald-600
-                                        dark:text-emerald-400
-                                        border
-                                        border-emerald-100
-                                        dark:border-emerald-500/20"
-                                >
+                                <span class="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20">
                                     <i class="mr-1 text-[8px] fa-solid fa-circle"></i>
                                     {{ $availableRooms }} Ruangan Aktif
                                 </span>
-
                             </div>
 
-                            {{-- ================================================= --}}
                             {{-- ROOM LIST --}}
-                            {{-- ================================================= --}}
-                            <div
-                                x-data="roomScroller()"
-                                x-init="init()"
-                                class="relative mt-5"
-                            >
-                                {{-- Fade Top --}}
-                                <div
-                                    class="absolute top-0 left-0 right-0 z-10 h-8
-                                        bg-gradient-to-b
-                                        from-white dark:from-slate-800
-                                        to-transparent
-                                        pointer-events-none"
-                                ></div>
+                            <div x-data="roomScroller()" x-init="init()" class="relative mt-5">
+                                <div class="absolute top-0 left-0 right-0 z-10 h-8 bg-gradient-to-b from-white dark:from-slate-800 to-transparent pointer-events-none"></div>
 
-                                {{-- Scroll Container --}}
-                                <div
-                                    x-ref="roomContainer"
-                                    @mouseenter="pause()"
-                                    @mouseleave="resume()"
-                                    @touchstart="pause()"
-                                    @touchend="resumeDelayed()"
-                                    @wheel="pause()"
-                                    class="space-y-4 room-scroll
-                                        max-h-[390px]
-                                        overflow-y-auto
-                                        pr-1
-                                        scroll-smooth
-                                        overscroll-contain
-                                        scrollbar-thin
-                                        scrollbar-thumb-slate-300
-                                        dark:scrollbar-thumb-slate-600"
-                                    style="
-                                        scrollbar-width: thin;
-                                        scrollbar-color: #cbd5e1 transparent;
-                                    "
-                                >
-
+                                <div x-ref="roomContainer" @mouseenter="pause()" @mouseleave="resume()" @touchstart="pause()" @touchend="resumeDelayed()" @wheel="pause()" class="space-y-4 room-scroll max-h-[390px] overflow-y-auto pr-1 scroll-smooth overscroll-contain scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600" style="scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent;">
+                                    
                                     @forelse($rooms as $room)
-
                                         @php
-                                            $icon = trim(
-                                                $room->icon ?: 'fa-solid fa-door-open'
-                                            );
-
-                                            if (
-                                                str_starts_with($icon, 'fa-') &&
-                                                !str_contains($icon, 'fa-solid') &&
-                                                !str_contains($icon, 'fa-regular') &&
-                                                !str_contains($icon, 'fa-brands')
-                                            ) {
+                                            $icon = trim($room->icon ?: 'fa-solid fa-door-open');
+                                            if (str_starts_with($icon, 'fa-') && !str_contains($icon, 'fa-solid') && !str_contains($icon, 'fa-regular') && !str_contains($icon, 'fa-brands')) {
                                                 $icon = 'fa-solid ' . $icon;
                                             }
                                         @endphp
-
-                                        <div
-                                            class="group
-                                                flex items-center justify-between room-scroll
-                                                gap-3 p-4
-                                                border rounded-2xl
-                                                bg-slate-50 dark:bg-slate-700/50
-                                                border-slate-100 dark:border-slate-600
-                                                hover:border-blue-300
-                                                dark:hover:border-blue-500/50
-                                                hover:shadow-lg
-                                                hover:-translate-y-0.5
-                                                transition-all duration-300"
-                                        >
-
+                                        <div class="group flex items-center justify-between room-scroll gap-3 p-4 border rounded-2xl bg-slate-50 dark:bg-slate-700/50 border-slate-100 dark:border-slate-600 hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
                                             <div class="flex items-center min-w-0 gap-3.5">
-
-                                                <div
-                                                    class="flex items-center justify-center
-                                                        flex-shrink-0
-                                                        w-12 h-12
-                                                        rounded-xl
-                                                        bg-blue-100
-                                                        dark:bg-blue-900/40
-                                                        text-blue-600
-                                                        dark:text-blue-400"
-                                                >
+                                                <div class="flex items-center justify-center flex-shrink-0 w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
                                                     <i class="text-lg {{ $icon }}"></i>
                                                 </div>
-
                                                 <div class="min-w-0">
-
-                                                    <h4
-                                                        class="text-sm font-semibold truncate
-                                                            text-slate-800
-                                                            dark:text-slate-100"
-                                                    >
+                                                    <h4 class="text-sm font-semibold truncate text-slate-800 dark:text-slate-100">
                                                         {{ $room->nama_ruangan }}
                                                     </h4>
-
-                                                    <p
-                                                        class="flex items-center gap-1
-                                                            mt-0.5
-                                                            text-xs
-                                                            text-slate-500
-                                                            dark:text-slate-400"
-                                                    >
+                                                    <p class="flex items-center gap-1 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                                                         <i class="fa-solid fa-users"></i>
                                                         {{ $room->kapasitas }} Orang
                                                     </p>
-
                                                     @if($room->lokasi)
-
-                                                        <p
-                                                            class="flex items-center gap-1
-                                                                mt-0.5
-                                                                text-[10px]
-                                                                text-slate-400
-                                                                dark:text-slate-500"
-                                                        >
-                                                            <i class="fa-solid fa-location-dot"></i>
-                                                            {{ $room->lokasi }}
-                                                        </p>
-
+                                                    <p class="flex items-center gap-1 mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">
+                                                        <i class="fa-solid fa-location-dot"></i>
+                                                        {{ $room->lokasi }}
+                                                    </p>
                                                     @endif
-
                                                 </div>
-
                                             </div>
-
-                                            <span
-                                                class="flex-shrink-0
-                                                    px-3 py-1
-                                                    rounded-full
-                                                    text-[10px] sm:text-xs
-                                                    font-semibold
-                                                    bg-emerald-100
-                                                    dark:bg-emerald-500/20
-                                                    text-emerald-700
-                                                    dark:text-emerald-300"
-                                            >
-                                                <i class="mr-1 fa-solid fa-check"></i>
-                                                Aktif
+                                            <span class="flex-shrink-0 px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                                                <i class="mr-1 fa-solid fa-check"></i> Aktif
                                             </span>
-
                                         </div>
-
                                     @empty
-
                                         <div class="py-12 text-center">
-
-                                            <div
-                                                class="flex items-center justify-center
-                                                    w-14 h-14 mx-auto mb-4
-                                                    rounded-2xl
-                                                    bg-slate-100
-                                                    dark:bg-slate-700"
-                                            >
-                                                <i
-                                                    class="text-xl
-                                                        fa-solid fa-door-closed
-                                                        text-slate-400"
-                                                ></i>
+                                            <div class="flex items-center justify-center w-14 h-14 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-700">
+                                                <i class="text-xl fa-solid fa-door-closed text-slate-400"></i>
                                             </div>
-
-                                            <p
-                                                class="text-sm font-semibold
-                                                    text-slate-500
-                                                    dark:text-slate-400"
-                                            >
+                                            <p class="text-sm font-semibold text-slate-500 dark:text-slate-400">
                                                 Belum ada ruangan tersedia
                                             </p>
-
                                         </div>
-
                                     @endforelse
-
                                 </div>
-
-                                {{-- Fade Bottom --}}
-                                <div
-                                    class="absolute bottom-0 left-0 right-0 z-10 h-10
-                                        bg-gradient-to-t
-                                        from-white dark:from-slate-800
-                                        to-transparent
-                                        pointer-events-none"
-                                ></div>
-
+                                <div class="absolute bottom-0 left-0 right-0 z-10 h-10 bg-gradient-to-t from-white dark:from-slate-800 to-transparent pointer-events-none"></div>
                             </div>
                         </div>
 
                         {{-- ================================================= --}}
                         {{-- FLOATING STATUS - DI LUAR CARD --}}
                         {{-- ================================================= --}}
-                        <div
-                            class="absolute
-                                left-0 sm:-left-5
+                        {{-- FIX: Ubah left-0 menjadi center murni pada mobile menggunakan translate-x --}}
+                        <div class="absolute
+                                left-1/2 -translate-x-1/2 sm:-left-5 sm:translate-x-0
                                 -bottom-8
                                 z-20
                                 flex items-center gap-3
                                 p-4
-                                min-w-[250px]
+                                w-[85%] sm:w-auto sm:min-w-[250px]
                                 glass-card
                                 rounded-2xl
                                 shadow-xl
-                                animate-float"
-                        >
+                                animate-float">
 
-                            <div
-                                class="flex items-center justify-center
+                            <div class="flex items-center justify-center
                                     flex-shrink-0
                                     w-10 h-10
                                     text-lg font-bold
@@ -527,74 +284,47 @@ new
                                     bg-emerald-500
                                     rounded-full
                                     shadow-lg
-                                    shadow-emerald-500/30"
-                            >
+                                    shadow-emerald-500/30">
                                 <i class="fa-solid fa-circle-check"></i>
                             </div>
 
                             <div class="min-w-0">
-
-                                <p
-                                    class="text-xs font-medium
-                                        text-slate-500
-                                        dark:text-slate-300"
-                                >
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-300">
                                     Ruang Aktif
                                 </p>
-
-                                <p
-                                    class="text-sm font-bold
-                                        text-slate-800
-                                        dark:text-white
-                                        whitespace-nowrap"
-                                >
+                                <p class="text-sm font-bold text-slate-800 dark:text-white whitespace-nowrap">
                                     {{ $availableRooms }} Ruangan Siap Dipinjam
                                 </p>
-
                             </div>
-
                         </div>
 
                     </div>
-
                 </div>
-
             </div>
-
         </div>
-
     </section>
 
 
     {{-- ========================================================= --}}
     {{-- ALUR PEMINJAMAN --}}
     {{-- ========================================================= --}}
-    <section
-        id="alur"
-        class="relative py-20
+    <section id="alur" class="relative py-20
                bg-white dark:bg-slate-900
-               transition-colors duration-300"
-    >
+               transition-colors duration-300">
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-            <div
-                class="max-w-3xl mx-auto mb-16
-                       space-y-3 text-center"
-            >
+            <div class="max-w-3xl mx-auto mb-16
+                       space-y-3 text-center">
 
-                <span
-                    class="text-sm font-semibold tracking-wider
-                           text-blue-600 dark:text-blue-400 uppercase"
-                >
+                <span class="text-sm font-semibold tracking-wider
+                           text-blue-600 dark:text-blue-400 uppercase">
                     Proses Mudah & Cepat
                 </span>
 
-                <h2
-                    class="text-3xl sm:text-4xl
+                <h2 class="text-3xl sm:text-4xl
                            font-extrabold
-                           text-slate-900 dark:text-white"
-                >
+                           text-slate-900 dark:text-white">
                     Alur & Tata Cara Peminjaman
                 </h2>
 
@@ -608,42 +338,41 @@ new
             <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
 
                 @php
-                    $steps = [
-                        [
-                            'number' => '1',
-                            'color' => 'blue',
-                            'title' => 'Cari & Pilih Ruang',
-                            'text' => 'Pilih tanggal dan ruangan yang sesuai kebutuhan kegiatan Anda.',
-                            'footer' => 'Lihat Jadwal Realtime',
-                        ],
-                        [
-                            'number' => '2',
-                            'color' => 'indigo',
-                            'title' => 'Isi Form Peminjaman',
-                            'text' => 'Lengkapi informasi kegiatan, waktu, jumlah peserta, dan kebutuhan fasilitas.',
-                            'footer' => 'Formulir Digital Ringkas',
-                        ],
-                        [
-                            'number' => '3',
-                            'color' => 'amber',
-                            'title' => 'Verifikasi Petugas',
-                            'text' => 'Pengajuan diperiksa oleh petugas sarpras dan status dapat dipantau.',
-                            'footer' => 'Persetujuan Cepat',
-                        ],
-                        [
-                            'number' => '4',
-                            'color' => 'emerald',
-                            'title' => 'Gunakan Ruangan',
-                            'text' => 'Gunakan bukti peminjaman digital sebagai tanda bahwa ruangan telah disetujui.',
-                            'footer' => 'E-Permit Digital',
-                        ],
-                    ];
+                $steps = [
+                [
+                'number' => '1',
+                'color' => 'blue',
+                'title' => 'Cari & Pilih Ruang',
+                'text' => 'Pilih tanggal dan ruangan yang sesuai kebutuhan kegiatan Anda.',
+                'footer' => 'Lihat Jadwal Realtime',
+                ],
+                [
+                'number' => '2',
+                'color' => 'indigo',
+                'title' => 'Isi Form Peminjaman',
+                'text' => 'Lengkapi informasi kegiatan, waktu, jumlah peserta, dan kebutuhan fasilitas.',
+                'footer' => 'Formulir Digital Ringkas',
+                ],
+                [
+                'number' => '3',
+                'color' => 'amber',
+                'title' => 'Verifikasi Petugas',
+                'text' => 'Pengajuan diperiksa oleh petugas sarpras dan status dapat dipantau.',
+                'footer' => 'Persetujuan Cepat',
+                ],
+                [
+                'number' => '4',
+                'color' => 'emerald',
+                'title' => 'Gunakan Ruangan',
+                'text' => 'Gunakan bukti peminjaman digital sebagai tanda bahwa ruangan telah disetujui.',
+                'footer' => 'E-Permit Digital',
+                ],
+                ];
                 @endphp
 
                 @foreach($steps as $step)
 
-                    <div
-                        class="relative p-6
+                <div class="relative p-6
                                bg-slate-50
                                dark:bg-slate-800/80
                                rounded-2xl
@@ -652,51 +381,42 @@ new
                                dark:border-slate-700
                                hover:shadow-xl
                                hover:-translate-y-1
-                               transition-all"
-                    >
+                               transition-all">
 
-                        <div
-                            class="flex items-center justify-center
+                    <div class="flex items-center justify-center
                                    w-14 h-14 mb-6
                                    text-xl font-bold text-white
                                    rounded-2xl
-                                   bg-{{ $step['color'] }}-600"
-                        >
-                            {{ $step['number'] }}
-                        </div>
+                                   bg-{{ $step['color'] }}-600">
+                        {{ $step['number'] }}
+                    </div>
 
-                        <h3
-                            class="mb-2 text-lg font-bold
-                                   text-slate-800 dark:text-white"
-                        >
-                            {{ $step['title'] }}
-                        </h3>
+                    <h3 class="mb-2 text-lg font-bold
+                                   text-slate-800 dark:text-white">
+                        {{ $step['title'] }}
+                    </h3>
 
-                        <p
-                            class="text-sm leading-relaxed
-                                   text-slate-600 dark:text-slate-400"
-                        >
-                            {{ $step['text'] }}
-                        </p>
+                    <p class="text-sm leading-relaxed
+                                   text-slate-600 dark:text-slate-400">
+                        {{ $step['text'] }}
+                    </p>
 
-                        <div
-                            class="flex items-center gap-1
+                    <div class="flex items-center gap-1
                                    pt-4 mt-4
                                    border-t
                                    border-slate-200/60
                                    dark:border-slate-700/60
                                    text-xs font-semibold
                                    text-{{ $step['color'] }}-600
-                                   dark:text-{{ $step['color'] }}-400"
-                        >
-                            <span>
-                                {{ $step['footer'] }}
-                            </span>
+                                   dark:text-{{ $step['color'] }}-400">
+                        <span>
+                            {{ $step['footer'] }}
+                        </span>
 
-                            <i class="text-[10px] fa-solid fa-chevron-right"></i>
-                        </div>
-
+                        <i class="text-[10px] fa-solid fa-chevron-right"></i>
                     </div>
+
+                </div>
 
                 @endforeach
 
@@ -710,24 +430,17 @@ new
     {{-- ========================================================= --}}
     {{-- KEUNGGULAN --}}
     {{-- ========================================================= --}}
-    <section
-        id="fitur"
-        class="relative py-20 overflow-hidden
+    <section id="fitur" class="relative py-20 overflow-hidden
                text-white
-               bg-slate-900 dark:bg-slate-950"
-    >
+               bg-slate-900 dark:bg-slate-950">
 
         <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-            <div
-                class="max-w-3xl mx-auto mb-16
-                       space-y-3 text-center"
-            >
+            <div class="max-w-3xl mx-auto mb-16
+                       space-y-3 text-center">
 
-                <span
-                    class="text-sm font-semibold tracking-wider
-                           text-blue-400 uppercase"
-                >
+                <span class="text-sm font-semibold tracking-wider
+                           text-blue-400 uppercase">
                     Mengapa RuangKu?
                 </span>
 
@@ -745,60 +458,54 @@ new
             <div class="grid gap-8 md:grid-cols-3">
 
                 @php
-                    $features = [
-                        [
-                            'icon' => 'fa-clock-rotate-left',
-                            'color' => 'blue',
-                            'title' => 'Jadwal Real-time',
-                            'text' => 'Lihat ketersediaan ruangan dan waktu peminjaman sebelum mengajukan booking.',
-                        ],
-                        [
-                            'icon' => 'fa-shield-halved',
-                            'color' => 'indigo',
-                            'title' => 'Akses Terverifikasi',
-                            'text' => 'Setiap peminjaman menggunakan akun yang sudah terdaftar dan terotorisasi.',
-                        ],
-                        [
-                            'icon' => 'fa-mobile-screen-button',
-                            'color' => 'emerald',
-                            'title' => 'Responsif',
-                            'text' => 'Sistem dapat digunakan dengan nyaman melalui Smartphone, Tablet, maupun Desktop.',
-                        ],
-                    ];
+                $features = [
+                [
+                'icon' => 'fa-clock-rotate-left',
+                'color' => 'blue',
+                'title' => 'Jadwal Real-time',
+                'text' => 'Lihat ketersediaan ruangan dan waktu peminjaman sebelum mengajukan booking.',
+                ],
+                [
+                'icon' => 'fa-shield-halved',
+                'color' => 'indigo',
+                'title' => 'Akses Terverifikasi',
+                'text' => 'Setiap peminjaman menggunakan akun yang sudah terdaftar dan terotorisasi.',
+                ],
+                [
+                'icon' => 'fa-mobile-screen-button',
+                'color' => 'emerald',
+                'title' => 'Responsif',
+                'text' => 'Sistem dapat digunakan dengan nyaman melalui Smartphone, Tablet, maupun Desktop.',
+                ],
+                ];
                 @endphp
 
                 @foreach($features as $feature)
 
-                    <div
-                        class="p-8 rounded-2xl
+                <div class="p-8 rounded-2xl
                                bg-slate-800/80
                                border border-slate-700/60
                                hover:border-{{ $feature['color'] }}-500/50
-                               transition-all"
-                    >
+                               transition-all">
 
-                        <div
-                            class="flex items-center justify-center
+                    <div class="flex items-center justify-center
                                    w-12 h-12 mb-6
                                    text-2xl
                                    rounded-xl
                                    bg-{{ $feature['color'] }}-500/10
-                                   text-{{ $feature['color'] }}-400"
-                        >
-                            <i class="fa-solid {{ $feature['icon'] }}"></i>
-                        </div>
-
-                        <h3 class="mb-3 text-xl font-bold">
-                            {{ $feature['title'] }}
-                        </h3>
-
-                        <p
-                            class="text-sm leading-relaxed text-slate-400"
-                        >
-                            {{ $feature['text'] }}
-                        </p>
-
+                                   text-{{ $feature['color'] }}-400">
+                        <i class="fa-solid {{ $feature['icon'] }}"></i>
                     </div>
+
+                    <h3 class="mb-3 text-xl font-bold">
+                        {{ $feature['title'] }}
+                    </h3>
+
+                    <p class="text-sm leading-relaxed text-slate-400">
+                        {{ $feature['text'] }}
+                    </p>
+
+                </div>
 
                 @endforeach
 
@@ -812,29 +519,21 @@ new
     {{-- ========================================================= --}}
     {{-- FAQ --}}
     {{-- ========================================================= --}}
-    <section
-        id="faq"
-        class="py-20
+    <section id="faq" class="py-20
                bg-slate-50 dark:bg-slate-900
-               transition-colors duration-300"
-        x-data="{ activeFaq: null }"
-    >
+               transition-colors duration-300" x-data="{ activeFaq: null }">
 
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 
             <div class="mb-14 space-y-3 text-center">
 
-                <span
-                    class="text-sm font-semibold tracking-wider
-                           text-blue-600 dark:text-blue-400 uppercase"
-                >
+                <span class="text-sm font-semibold tracking-wider
+                           text-blue-600 dark:text-blue-400 uppercase">
                     Pertanyaan Umum
                 </span>
 
-                <h2
-                    class="text-3xl font-extrabold
-                           text-slate-900 dark:text-white"
-                >
+                <h2 class="text-3xl font-extrabold
+                           text-slate-900 dark:text-white">
                     Sering Ditanyakan
                 </h2>
 
@@ -848,72 +547,61 @@ new
             <div class="space-y-4">
 
                 @php
-                    $faqs = [
-                        [
-                            'question' => 'Siapa saja yang diperbolehkan meminjam ruangan?',
-                            'answer' => 'Pengguna yang telah memiliki akun dan mendapatkan hak akses peminjaman dapat mengajukan penggunaan ruangan sesuai ketentuan yang berlaku.',
-                        ],
-                        [
-                            'question' => 'Bagaimana cara mengetahui ruangan masih tersedia?',
-                            'answer' => 'Ketersediaan ruangan dapat dilihat melalui jadwal peminjaman sebelum pengguna mengajukan booking.',
-                        ],
-                        [
-                            'question' => 'Bagaimana jika pengajuan saya ditolak?',
-                            'answer' => 'Status pengajuan dapat dipantau melalui menu Riwayat Peminjaman. Apabila ditolak, pengguna dapat melihat informasi status dan mengajukan kembali dengan jadwal yang sesuai.',
-                        ],
-                    ];
+                $faqs = [
+                [
+                'question' => 'Siapa saja yang diperbolehkan meminjam ruangan?',
+                'answer' => 'Pengguna yang telah memiliki akun dan mendapatkan hak akses peminjaman dapat mengajukan
+                penggunaan ruangan sesuai ketentuan yang berlaku.',
+                ],
+                [
+                'question' => 'Bagaimana cara mengetahui ruangan masih tersedia?',
+                'answer' => 'Ketersediaan ruangan dapat dilihat melalui jadwal peminjaman sebelum pengguna mengajukan
+                booking.',
+                ],
+                [
+                'question' => 'Bagaimana jika pengajuan saya ditolak?',
+                'answer' => 'Status pengajuan dapat dipantau melalui menu Riwayat Peminjaman. Apabila ditolak, pengguna
+                dapat melihat informasi status dan mengajukan kembali dengan jadwal yang sesuai.',
+                ],
+                ];
                 @endphp
 
                 @foreach($faqs as $index => $faq)
 
-                    <div
-                        class="overflow-hidden
+                <div class="overflow-hidden
                                bg-white dark:bg-slate-800
                                rounded-2xl
                                border
-                               border-slate-200 dark:border-slate-700"
-                    >
+                               border-slate-200 dark:border-slate-700">
 
-                        <button
-                            type="button"
-                            @click="activeFaq = activeFaq === {{ $index }} ? null : {{ $index }}"
-                            class="flex items-center
+                    <button type="button" @click="activeFaq = activeFaq === {{ $index }} ? null : {{ $index }}" class="flex items-center
                                    justify-between gap-4
                                    w-full px-6 py-5
                                    font-semibold text-left
-                                   text-slate-800 dark:text-white"
-                        >
+                                   text-slate-800 dark:text-white">
 
-                            <span>
-                                {{ $faq['question'] }}
-                            </span>
+                        <span>
+                            {{ $faq['question'] }}
+                        </span>
 
-                            <i
-                                class="transition-transform duration-300
-                                       fa-solid fa-chevron-down"
-                                :class="activeFaq === {{ $index }}
+                        <i class="transition-transform duration-300
+                                       fa-solid fa-chevron-down" :class="activeFaq === {{ $index }}
                                     ? 'rotate-180'
-                                    : ''"
-                            ></i>
+                                    : ''"></i>
 
-                        </button>
+                    </button>
 
-                        <div
-                            x-show="activeFaq === {{ $index }}"
-                            x-collapse
-                            x-cloak
-                            class="px-6 pb-5 pt-3
+                    <div x-show="activeFaq === {{ $index }}" x-collapse x-cloak class="px-6 pb-5 pt-3
                                    text-sm leading-relaxed
                                    border-t
                                    border-slate-100
                                    dark:border-slate-700
                                    text-slate-600
-                                   dark:text-slate-400"
-                        >
-                            {{ $faq['answer'] }}
-                        </div>
-
+                                   dark:text-slate-400">
+                        {{ $faq['answer'] }}
                     </div>
+
+                </div>
 
                 @endforeach
 
@@ -978,8 +666,9 @@ new
                 'touchstart',
                 () => {
                     this.isPaused = true;
-                },
-                { passive: true }
+                }, {
+                    passive: true
+                }
             );
 
             /*
@@ -995,8 +684,9 @@ new
                             this.isPaused = false;
                         }
                     }, 1500);
-                },
-                { passive: true }
+                }, {
+                    passive: true
+                }
             );
 
             /*
@@ -1024,8 +714,9 @@ new
 
                         this.stopAutoScroll();
                     }
-                },
-                { passive: true }
+                }, {
+                    passive: true
+                }
             );
 
             /*
@@ -1081,5 +772,6 @@ new
             this.stopAutoScroll();
         }
     }));
+
 </script>
 @endscript

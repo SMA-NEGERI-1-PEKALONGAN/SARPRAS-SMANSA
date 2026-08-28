@@ -921,7 +921,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
                 <div class="flex items-center gap-2">
 
                     <span class="text-xs font-bold text-gray-400 uppercase">
-                        Filter Tipe
+                        Filter Role
                     </span>
 
                     <select
@@ -929,7 +929,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
                         class="px-3 py-2 text-xs font-bold border-none outline-none bg-gray-50 dark:bg-gray-800 rounded-xl focus:ring-indigo-500 dark:text-white"
                     >
                         <option value="">
-                            Semua Tipe
+                            Semua Role
                         </option>
 
                         <option value="admin">
@@ -1019,7 +1019,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
                         </th>
 
                         <th class="px-6 py-4 text-xs text-gray-400 uppercase">
-                            Tipe & Roles
+                            Roles
                         </th>
 
                         <th class="px-6 py-4 text-xs text-gray-400 uppercase">
@@ -1265,7 +1265,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
                             <div>
 
                                 <label class="block mb-1 text-sm font-bold text-gray-700 dark:text-gray-300">
-                                    Tipe Pengguna Dasar
+                                    Role
                                 </label>
 
                                 <select
@@ -1274,7 +1274,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
                                 >
 
                                     <option value="">
-                                        -- Pilih Tipe --
+                                        -- Pilih Role --
                                     </option>
 
                                     <option value="admin">

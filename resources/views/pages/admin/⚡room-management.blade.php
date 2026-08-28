@@ -418,7 +418,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Ruangan')] class extends Compone
                         <td class="px-6 py-4">
                             <button wire:click="toggleStatus({{ $room->id }})" wire:loading.attr="disabled"
                                 class="px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all {{ $room->status_tersedia ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-red-100 text-red-700 hover:bg-red-200' }}">
-                                {{ $room->status_tersedia ? 'Tersedia' : 'Tdk Tersedia' }}
+                                {{ $room->status_tersedia ? 'Tersedia' : 'Tidak Tersedia' }}
                             </button>
                         </td>
                         <td class="px-6 py-4 text-center">
