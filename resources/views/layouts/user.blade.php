@@ -51,8 +51,8 @@
     {{-- Application Assets --}}
     {{-- ===================================================== --}}
     @vite([
-        'resources/css/user.css',
-        'resources/js/user.js'
+        'resources/css/guest.css',
+        'resources/js/guest.js'
     ])
 
     @livewireStyles
