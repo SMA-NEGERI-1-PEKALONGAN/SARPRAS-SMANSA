@@ -45,8 +45,6 @@ return [
     */
 
     'component_layout' => 'layouts::app',
-    'component_layout' => 'layouts::auth',
-    'component_layout' => 'layouts::user',
 
     /*
     |---------------------------------------------------------------------------
@@ -135,10 +133,11 @@ return [
         'rules' => null,                                      // Example: ['file', 'mimes:png,jpg'] | Default: ['required', 'file', 'max:12288'] (12MB)
         'directory' => null,                                  // Example: 'tmp'                     | Default: 'livewire-tmp'
         'middleware' => null,                                 // Example: 'throttle:5,1'            | Default: 'throttle:60,1'
-        'preview_mimes' => [                                  // Supported file types for temporary pre-signed file URLs...
+        'preview_mimes' => [
             'png', 'gif', 'bmp', 'svg', 'wav', 'mp4',
             'mov', 'avi', 'wmv', 'mp3', 'm4a',
-            'jpg', 'jpeg', 'mpga', 'webp', 'wma',
+            'jpeg', 'mpga', 'webp', 'wma',
+            'application/pdf', // Add this line
         ],
         'max_upload_time' => 5, // Max duration (in minutes) before an upload is invalidated...
         'cleanup' => true, // Should cleanup temporary uploads older than 24 hrs...

@@ -21,7 +21,8 @@ return new class extends Migration
             $table->text('tujuan');
             $table->dateTime('tanggal_mulai');
             $table->dateTime('tanggal_selesai');
-            
+            // file_lampiran
+            $table->string('file_lampiran')->nullable();
             $table->enum('status', [
                 'Menunggu', 
                 'Disetujui', 

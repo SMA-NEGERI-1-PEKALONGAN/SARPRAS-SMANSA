@@ -18,6 +18,7 @@ class Borrowing extends Model
         'tujuan',
         'tanggal_mulai',
         'tanggal_selesai',
+        'file_lampiran',
         'status',
         'catatan_admin',
     ];

@@ -46,7 +46,8 @@
         crossorigin="anonymous"
         referrerpolicy="no-referrer"
     >
-
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     {{-- ===================================================== --}}
     {{-- Application Assets --}}
     {{-- ===================================================== --}}
@@ -56,6 +57,7 @@
     ])
 
     @livewireStyles
+    
     <style>
         
          html {
@@ -69,6 +71,74 @@
             box-shadow: 0 0 12px var(--livewire-progress-bar-color) !important;
             z-index: 9999 !important;
         }
+
+        /* Hide scrollbar tetapi scrolling tetap aktif */
+        .hide-scrollbar {
+            -ms-overflow-style: none;  /* IE & Edge lama */
+            scrollbar-width: none;     /* Firefox */
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;             /* Chrome, Safari, Edge */
+        }
+        .select2-container--default .select2-selection--single {
+            background-color: #ffffff    !important; /* bg-gray-50 */
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.75rem !important; /* rounded-xl */
+            height: 42px !important;
+            display: flex;
+            align-items: center;
+            padding-left: 0.5rem;
+        }
+        
+        /* Warna Text Pilihan */
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #1f2937 !important; /* text-gray-700 */
+            font-weight: 500;
+            line-height: normal !important;
+        }
+
+        /* Panah Dropdown */
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 40px !important;
+            right: 10px !important;
+        }
+
+        /* Styling Kotak Dropdown (List) */
+        .select2-dropdown {
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.75rem !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+            overflow: hidden;
+            z-index: 10005 !important; /* Pastikan di atas modal */
+        }
+
+        /* Kotak Pencarian di dalam Dropdown */
+        .select2-search--dropdown .select2-search__field {
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.5rem !important;
+            padding: 0.5rem !important;
+            outline: none !important;
+        }
+
+        /* Item List */
+        .select2-results__option {
+            padding: 8px 16px !important;
+            color: #4b5563 !important;
+        }
+
+        /* Item Saat Di-hover / Dipilih */
+        .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+            background-color: #4f46e5 !important; /* bg-indigo-600 */
+            color: white !important;
+        }
+        /* salte slate-800 sama dengan #1f2937 */
+        /* --- DARK MODE SUPPORT (Opsional, jika Anda pakai class 'dark' di body/html) --- */
+        .dark .select2-container--default .select2-selection--single { background-color: #1f2937 !important; /* dark:bg-gray-800 */ }
+        .dark .select2-container--default .select2-selection--single .select2-selection__rendered { color: #f3f4f6 !important; }
+        .dark .select2-dropdown { background-color: #1f2937 !important; border-color: #374151 !important; }
+        .dark .select2-search--dropdown .select2-search__field { background-color: #111827 !important; border-color: #374151 !important; color: white !important; }
+        .dark .select2-results__option { color: #d1d5db !important; }
     </style>
     {{-- ===================================================== --}}
     {{-- Theme Initializer --}}
@@ -602,7 +672,7 @@
 
                         {{-- CTA --}}
                         <a
-                            href="{{ route('login') }}"
+                            href="{{ route('booking') }}"
                             wire:navigate
                             class="group inline-flex items-center gap-2 rounded-xl
                                 bg-gradient-to-r from-blue-600 to-indigo-600
@@ -1236,5 +1306,6 @@
 
     @stack('scripts')
 
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </body>
 </html>

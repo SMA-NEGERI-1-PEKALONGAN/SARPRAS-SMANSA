@@ -18,7 +18,8 @@ return new class extends Migration
             $table->foreignId('item_id')->nullable()->constrained()->cascadeOnDelete();
             
             $table->integer('jumlah')->default(1);
-            
+            $table->string('catatan')->nullable();
+            $table->string('file_bukti_pengembalian')->nullable();
             // Status per item (Karena admin bisa setuju pinjam Proyektor, tapi nolak pinjam Ruang A)
             $table->enum('status', [
                 'Menunggu', 

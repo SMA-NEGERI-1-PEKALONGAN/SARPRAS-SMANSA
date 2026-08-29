@@ -14,6 +14,7 @@ class BorrowingDetail extends Model
         'borrowing_id',
         'room_id',
         'item_id',
+        'catatan',
         'jumlah',
         'status',
     ];
