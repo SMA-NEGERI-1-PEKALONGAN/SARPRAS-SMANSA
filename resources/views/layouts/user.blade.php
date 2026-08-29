@@ -17,8 +17,8 @@
     >
 
     <title>
-        {{ $title ?? 'RuangKu' }} |
-        {{ config('app.name', 'RuangKu') }}
+        {{ $title ?? 'SARPRAS SMANSA' }} |
+        {{ config('app.name', 'SARPRAS SMANSA') }}
     </title>
 
     {{-- ===================================================== --}}
@@ -368,7 +368,7 @@
                     href="{{ route('home') }}"
                     wire:navigate
                     class="group flex shrink-0 items-center gap-2.5"
-                    aria-label="RuangKu - Beranda"
+                    aria-label="Branda - SARPRAS SMANSA"
                     @click="setActive('home')"
                 >
 
@@ -384,7 +384,7 @@
                             group-hover:-translate-y-0.5
                             group-hover:shadow-lg"
                     >
-                        <i class="text-[17px] fa-solid fa-door-open"></i>
+                        <i class="text-[17px] fa-solid fa-handshake"></i>
                     </div>
 
 
@@ -397,10 +397,10 @@
                         class="text-[19px] sm:text-[21px] font-bold tracking-tight
                             transition-colors duration-300"
                     >
-                        Ruang<span
+                        Sarpras<span
                             class="text-blue-600 dark:text-blue-400
                                 transition-colors duration-300"
-                        >Ku</span>
+                        >SMANSA</span>
                     </span>
 
                 </a>
@@ -590,8 +590,8 @@
                             wire:navigate
 
                             :class="scrolled
-                                ? 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white'
-                                : 'text-slate-700 hover:bg-slate-900/5 hover:text-slate-900 dark:text-white dark:hover:bg-white/10'"
+                                ? 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-white dark:hover:bg-slate-800 dark:hover:text-white'
+                                : ' text-slate-700 hover:bg-slate-900/5 hover:text-slate-900 dark:text-white dark:hover:bg-white/10 dark:hover:text-white'"
 
                             class="rounded-xl px-4 py-2.5 text-sm font-semibold
                                 transition-all duration-300"
@@ -637,7 +637,7 @@
                         >
                             <i class="text-[12px] fa-solid fa-calendar-plus"></i>
 
-                            <span>Booking Ruang</span>
+                            <span>Peminjaman Baru</span>
 
                             <i
                                 class="text-[11px] transition-transform duration-200
@@ -768,11 +768,11 @@
 
                         <span class="flex-1">Home</span>
 
-                        <i
+                        {{-- <i
                             x-show="activeSection === 'home' || activeSection === 'hero'"
                             x-cloak
                             class="text-xs fa-solid fa-check"
-                        ></i>
+                        ></i> --}}
                     </a>
 
 
@@ -801,11 +801,11 @@
 
                         <span class="flex-1">Alur Peminjaman</span>
 
-                        <i
+                        {{-- <i
                             x-show="activeSection === 'alur'"
                             x-cloak
                             class="text-xs fa-solid fa-check"
-                        ></i>
+                        ></i> --}}
                     </a>
 
 
@@ -834,11 +834,11 @@
 
                         <span class="flex-1">Keunggulan</span>
 
-                        <i
+                        {{-- <i
                             x-show="activeSection === 'fitur'"
                             x-cloak
                             class="text-xs fa-solid fa-check"
-                        ></i>
+                        ></i> --}}
                     </a>
 
 
@@ -867,11 +867,11 @@
 
                         <span class="flex-1">FAQ</span>
 
-                        <i
+                        {{-- <i
                             x-show="activeSection === 'faq'"
                             x-cloak
                             class="text-xs fa-solid fa-check"
-                        ></i>
+                        ></i> --}}
                     </a>
 
                 </nav>
@@ -998,12 +998,15 @@
                                    bg-blue-600
                                    text-white font-bold"
                         >
-                            <i class="fa-solid fa-door-open"></i>
+                            <i class="fa-solid fa-handshake"></i>
                         </div>
 
                         <span class="text-xl font-bold text-white">
-                            RuangKu
-                        </span>
+                            Sarpras<span
+                            class="text-blue-600 dark:text-blue-400
+                                transition-colors duration-300"
+                        >SMANSA</span>
+                        </span> 
                     </a>
 
                     <p class="text-xs leading-relaxed">
@@ -1137,12 +1140,12 @@
 
                         <li class="flex items-center gap-2">
                             <i class="text-blue-500 fa-solid fa-envelope"></i>
-                            support@ruangku.sch.id
+                            info@sma1pekalongan.sch.id
                         </li>
 
                         <li class="flex items-center gap-2">
                             <i class="text-blue-500 fa-solid fa-phone"></i>
-                            +62 (021) 555-0199
+                            (0285) 421190
                         </li>
 
                         <li class="flex items-center gap-2">
@@ -1164,30 +1167,29 @@
                        sm:flex-row"
             >
                 <p>
-                    &copy; {{ date('Y') }}
-                    {{ config('app.name', 'RuangKu') }}.
+                    &copy; {{ date('Y') }} Tim IT SMANSA
                     All rights reserved.
                 </p>
 
                 <div class="flex gap-4 text-base">
 
                     <a
-                        href="#"
+                        href="https://www.facebook.com/sman1pekalongan" target="_blank"
                         class="transition-colors hover:text-blue-400"
                     >
                         <i class="fa-brands fa-facebook"></i>
                     </a>
 
                     <a
-                        href="#"
+                        href="https://x.com/SMA1PEKALONGAN" target="_blank"
                         class="transition-colors hover:text-blue-400"
                     >
-                        <i class="fa-brands fa-twitter"></i>
+                        <i class="fa-brands fa-x-twitter"></i>
                     </a>
 
                     <a
-                        href="#"
-                        class="transition-colors hover:text-blue-400"
+                        href="https://www.instagram.com/sma1pekalongan/"
+                        class="transition-colors hover:text-blue-400" target="_blank"
                     >
                         <i class="fa-brands fa-instagram"></i>
                     </a>

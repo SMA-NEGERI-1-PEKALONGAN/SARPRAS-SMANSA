@@ -5,15 +5,15 @@ use Livewire\Volt\Volt;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
-Route::get('/', function () {
-   Volt::route('/home', 'pages::user.home')->name('home');
-});
+
 
 /*
 |--------------------------------------------------------------------------
 | AREA PUBLIK NON MIDLEWARE
 |--------------------------------------------------------------------------
 */
+// public /
+Volt::route('/', 'pages::user.home')->name('home');
 Volt::route('/login', 'pages::auth.login')->name('login');
 Volt::route('/home', 'pages::user.home')->name('home');
 Volt::route('booking', 'pages::user.booking')->name('booking');
