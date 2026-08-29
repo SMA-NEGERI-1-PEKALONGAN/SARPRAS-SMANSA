@@ -164,6 +164,15 @@
         background-color: #1f2937;
         color: #f3f4f6;
     }
+
+    .hide-scrollbar {
+            -ms-overflow-style: none;  /* IE & Edge lama */
+            scrollbar-width: none;     /* Firefox */
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;             /* Chrome, Safari, Edge */
+        }
     </style>
     {{-- Theme Initializer --}}
     <script data-navigate-once>

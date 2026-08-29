@@ -840,7 +840,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
         <template x-teleport="body">
             <div x-show="open" class="fixed inset-0 z-999 flex items-center justify-center p-4" x-cloak>
                 <div class="fixed inset-0 bg-gray-900/70 backdrop-blur-sm"></div>
-                <div x-show="open" x-transition class="relative z-[101] w-full max-w-6xl max-h-[90vh] overflow-hidden bg-white shadow-2xl dark:bg-gray-900 rounded-3xl">
+                <div x-show="open" x-transition class="relative z-[101] w-full max-w-6xl max-h-[90vh] overflow-hidden bg-white shadow-2xl dark:bg-gray-900 rounded-3xl hide-scrollbar">
                     <div class="flex items-center justify-between gap-4 px-6 py-5 border-b border-gray-100 dark:border-gray-800">
                         <div>
                             <h4 class="text-xl font-bold text-gray-900 dark:text-white"><i class="mr-2 text-indigo-500 fa-solid fa-calendar-days"></i> Info Jadwal Peminjaman</h4>
@@ -919,7 +919,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
         <template x-teleport="body">
             <div x-show="open" class="fixed inset-0 z-9991 flex items-center justify-center p-4" x-cloak>
                 <div class="fixed inset-0 bg-gray-900/70 backdrop-blur-sm"></div>
-                <div x-show="open" x-transition class="relative z-[111] w-full max-w-5xl max-h-[90vh] overflow-hidden bg-white shadow-2xl dark:bg-gray-900 rounded-3xl">
+                <div x-show="open" x-transition class="relative z-[111] w-full max-w-5xl max-h-[90vh] overflow-hidden bg-white shadow-2xl dark:bg-gray-900 rounded-3xl hide-scrollbar">
                     <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-800">
                         <div>
                             <h4 class="text-xl font-bold text-gray-900 dark:text-white">Data Peminjaman</h4>
@@ -990,7 +990,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
         <template x-teleport="body">
             <div x-show="open" class="fixed inset-0 z-9992 flex items-center justify-center p-4" x-cloak>
                 <div class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm"></div>
-                <div x-show="open" x-transition class="relative z-[151] w-full max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-hidden bg-white dark:bg-gray-900 rounded-3xl shadow-2xl">
+                <div x-show="open" x-transition class="relative z-[151] w-full max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-hidden bg-white dark:bg-gray-900 rounded-3xl shadow-2xl hide-scrollbar">
                     <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-800">
                         <div>
                             <h4 class="text-lg font-bold text-gray-900 dark:text-white">Detail Peminjaman</h4>
@@ -1078,7 +1078,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
         <template x-teleport="body">
             <div x-show="open" class="fixed inset-0 z-9993 flex items-center justify-center p-4" x-cloak>
                 <div class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm"></div>
-                <div x-show="open" x-transition class="relative z-[201] w-full max-w-5xl max-h-[92vh] overflow-y-auto scrollbar-hidden bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800">
+                <div x-show="open" x-transition class=" relative z-[201] w-full max-w-5xl max-h-[92vh] overflow-y-auto scrollbar-hidden bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 hide-scrollbar">
                     <div class="sticky top-0 z-20 flex items-center justify-between px-6 py-5 bg-white/95 border-b border-gray-100 dark:bg-gray-900/95 dark:border-gray-800 backdrop-blur">
                         <div>
                             <h4 class="text-lg font-bold text-gray-900 dark:text-white">{{ $approvalCurrentStatus === 'Menunggu' ? 'Approve Pengajuan' : 'Tindak Lanjut Peminjaman' }}</h4>
@@ -1146,7 +1146,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
         <template x-teleport="body">
             <div x-show="open" class="fixed inset-0 z-9994 flex items-center justify-center p-4" x-cloak>
                 <div class="fixed inset-0 bg-gray-900/70 backdrop-blur-sm"></div>
-                <div x-show="open" x-transition class="relative z-[81] w-full max-w-5xl max-h-[90vh] overflow-y-auto scrollbar-hidden bg-white dark:bg-gray-900 rounded-3xl shadow-2xl">
+                <div x-show="open" x-transition class="relative z-[81] w-full max-w-5xl max-h-[90vh] overflow-y-auto scrollbar-hidden bg-white dark:bg-gray-900 rounded-3xl shadow-2xl hide-scrollbar">
                     <div class="sticky top-0 z-10 flex items-center justify-between px-6 py-5 bg-white/95 border-b border-gray-100 dark:bg-gray-900/95 dark:border-gray-800 backdrop-blur">
                         <h4 class="text-xl font-bold text-gray-900 dark:text-white">Tambah Booking</h4>
                         <button type="button" wire:click="closeAddModal" class="flex items-center justify-center w-9 h-9 text-gray-500 rounded-xl bg-gray-100 hover:text-red-500 dark:bg-gray-800"><i class="fa-solid fa-xmark"></i></button>
