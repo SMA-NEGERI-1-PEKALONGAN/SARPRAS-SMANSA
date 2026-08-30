@@ -867,19 +867,17 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                                         <td class="px-4 py-4 text-center"><span class="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold {{ $this->statusBadgeClass($booking->status) }}">{{ $booking->status }}</span></td>
                                         <td class="px-4 py-4 text-center">
                                             <div class="flex flex-wrap items-center justify-center gap-2">
-                                <button wire:click="openBorrowingDetailModal({{ $booking->id }})" class="px-3 py-2 text-[10px] font-bold text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">
-                                    <i class="mr-1 fa-solid fa-eye"></i>Detail
-                                </button>
-                                    @if(in_array($booking->status, ['Menunggu', 'Disetujui'], true))
-                                        <button wire:click="openApprovalModal({{ $booking->id }})" class="px-3 py-2 text-[10px] font-bold text-white rounded-lg {{ $booking->status === 'Menunggu' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-600 hover:bg-slate-700' }}">
-                                            <i class="mr-1 fa-solid {{ $booking->status === 'Menunggu' ? 'fa-gavel' : 'fa-pen-to-square' }}"></i>{{ $booking->status === 'Menunggu' ? 'Approve' : 'Tindak Lanjut' }}
-                                        </button>
-                                    @else
-                                        <button wire:click="openBorrowingDetailModal({{ $booking->id }})" class="px-3 py-2 text-[10px] font-bold text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">
-                                            <i class="mr-1 fa-solid fa-eye"></i>Detail
-                                        </button>
-                                    @endif
-                            </div>
+                                
+                                                @if(in_array($booking->status, ['Menunggu', 'Disetujui'], true))
+                                                    <button wire:click="openApprovalModal({{ $booking->id }})" class="px-3 py-2 text-[10px] font-bold text-white rounded-lg {{ $booking->status === 'Menunggu' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-600 hover:bg-slate-700' }}">
+                                                        <i class="mr-1 fa-solid {{ $booking->status === 'Menunggu' ? 'fa-gavel' : 'fa-pen-to-square' }}"></i>{{ $booking->status === 'Menunggu' ? 'Approve' : 'Tindak Lanjut' }}
+                                                    </button>
+                                                @else
+                                                    <button wire:click="openBorrowingDetailModal({{ $booking->id }})" class="px-3 py-2 text-[10px] font-bold text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">
+                                                        <i class="mr-1 fa-solid fa-eye"></i>Detail
+                                                    </button>
+                                                @endif
+                                        </div>
                                         </td>
                                     </tr>
                                 @empty
@@ -1499,7 +1497,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                             </button>
                             <button type="submit" wire:loading.attr="disabled" wire:target="saveApproval" class="w-full px-5 py-3 text-sm font-bold text-white bg-indigo-600 rounded-xl shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:py-2.5">
                                 <span wire:loading.remove wire:target="saveApproval">
-                                    <i class="mr-1 fa-solid fa-check"></i>
+                                    {{-- <i class="mr-1 fa-solid fa-check"></i> --}}
                                     {{ $approvalCurrentStatus === 'Menunggu' ? 'Approve' : 'Simpan Tindak Lanjut' }}
                                 </span>
                                 <span wire:loading wire:target="saveApproval">
@@ -1565,7 +1563,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
 
                                     <div>
                                         <label class="block mb-2 text-xs font-bold text-gray-700 dark:text-gray-300">Mulai</label>
-                                        <input type="datetime-local" wire:model="form.tanggal_mulai" class="w-full px-4 py-3 text-sm border-none bg-slate-50 rounded-xl dark:bg-gray-800 dark:text-white">
+                                        <input type="datetime-local" wire:model="form.tanggal_mulai" class="w-full px-4 py-3 text-sm border-none bg-slate-50 rounded-xl dark:bg-gray-800 dark:text-white md:min-w-[200px]">
                                     </div>
 
                                     <div>

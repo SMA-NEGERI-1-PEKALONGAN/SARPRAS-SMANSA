@@ -15,8 +15,10 @@ class BorrowingDetail extends Model
         'room_id',
         'item_id',
         'catatan',
+        'catatan_pengembalian',
         'jumlah',
         'status',
+        'file_bukti_pengembalian',
     ];
 
     protected $casts = [

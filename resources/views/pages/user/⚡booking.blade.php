@@ -821,7 +821,7 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
                         @endif
                     </div>
 
-                    <div class="flex gap-3 pt-2"><button type="button" wire:click="closeBookingModal" class="flex-1 py-3 text-sm font-medium rounded-xl text-slate-600 bg-slate-100 hover:bg-slate-200 dark:text-slate-300 dark:bg-slate-700">Batal</button><button type="submit" class="flex-[2] py-3 rounded-xl font-semibold text-sm text-white bg-brand-600 hover:bg-brand-700 flex items-center justify-center gap-2"><span wire:loading.remove wire:target="submitBooking">Ajukan Peminjaman</span><span wire:loading wire:target="submitBooking"><i class="fa-solid fa-circle-notch animate-spin"></i> Memproses...</span></button></div>
+                    <div class="flex gap-3 pt-2"><button type="button" wire:click="closeBookingModal" class="flex-1 py-3 text-sm font-medium rounded-xl text-slate-600 bg-slate-100 hover:bg-slate-200 dark:text-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600">Batal</button><button type="submit" class="flex-[2] py-3 rounded-xl font-semibold text-sm text-white bg-brand-600 hover:bg-brand-700 flex items-center justify-center gap-2"><span wire:loading.remove wire:target="submitBooking">Ajukan Peminjaman</span><span wire:loading wire:target="submitBooking"><i class="fa-solid fa-circle-notch animate-spin"></i> Memproses...</span></button></div>
                 </form>
             </div>
         </div>

@@ -19,6 +19,7 @@ return new class extends Migration
             
             $table->integer('jumlah')->default(1);
             $table->string('catatan')->nullable();
+            $table->string('catatan_pengembalian')->nullable();
             $table->string('file_bukti_pengembalian')->nullable();
             // Status per item (Karena admin bisa setuju pinjam Proyektor, tapi nolak pinjam Ruang A)
             $table->enum('status', [
