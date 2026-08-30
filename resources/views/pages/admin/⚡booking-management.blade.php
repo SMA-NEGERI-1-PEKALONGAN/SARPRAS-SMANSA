@@ -841,7 +841,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto overflow-y-auto scrollbar-hidden max-h-[58vh]">
+                    <div class="overflow-x-auto overflow-y-auto max-h-[58vh] hide-scrollbar">
                         @php($scheduleRows = $this->scheduleQuery()->paginate(10, ['*'], 'schedulePage'))
                         <table class="w-full min-w-[760px] text-xs text-left">
                             <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800">

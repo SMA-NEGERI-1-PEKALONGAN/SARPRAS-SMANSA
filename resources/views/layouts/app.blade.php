@@ -209,15 +209,28 @@
         }
 
         .hide-scrollbar {
-            -ms-overflow-style: none;
-            /* IE & Edge lama */
-            scrollbar-width: none;
-            /* Firefox */
+            overflow: auto; /* Pastikan elemen bisa di-scroll */
+            scrollbar-width: thin; /* Membuat scrollbar lebih tipis */
+            scrollbar-color: #a0aec0 transparent; /* Warna thumb (pegangan) dan track (jalur) */
         }
 
+        /* 1. Ukuran keseluruhan scrollbar */
         .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-            /* Chrome, Safari, Edge */
+            width: 8px;  /* Lebar untuk scrollbar vertikal */
+            height: 8px; /* Tinggi untuk scrollbar horizontal */
+        }
+        .hide-scrollbar::-webkit-scrollbar-track {
+            background: transparent; /* Dibuat transparan agar menyatu dengan background */
+            border-radius: 10px;
+        }
+        .hide-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #a0aec0; /* Warna abu-abu yang soft/modern */
+            border-radius: 10px;       /* Membuat ujungnya membulat */
+            border: 2px solid transparent; /* Trik untuk memberikan jarak (padding) pada thumb */
+            background-clip: padding-box;
+        }
+        .hide-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: #718096; /* Warna berubah menjadi sedikit lebih gelap */
         }
 
     </style>
