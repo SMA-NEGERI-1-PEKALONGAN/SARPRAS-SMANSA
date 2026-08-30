@@ -567,15 +567,15 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
         <div class="flex flex-wrap items-center w-full gap-3 xl:w-auto">
             <div class="relative w-full sm:w-auto">
                 <select wire:model.live="type" class="w-full py-2.5 pl-10 pr-8 appearance-none bg-brand-50 border border-brand-200 text-brand-700 dark:bg-brand-900/30 dark:border-brand-800 dark:text-brand-300 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer shadow-sm sm:w-48">
-                    <option value="ruangan">🏢 Ruangan</option>
-                    <option value="barang">📦 Barang</option>
+                    <option value="ruangan">Ruangan</option>
+                    <option value="barang">Barang</option>
                 </select>
                 <i class="absolute text-sm -translate-y-1/2 pointer-events-none left-3 top-1/2 fa-solid fa-layer-group text-brand-500"></i>
             </div>
 
             <div class="relative w-full sm:w-44">
                 <i class="absolute text-sm -translate-y-1/2 pointer-events-none left-3 top-1/2 fa-regular fa-calendar text-slate-400"></i>
-                <input type="date" wire:model.live="dateFilter" class="w-full py-2.5 pl-9 pr-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm">
+                <input type="date" wire:model.live="dateFilter" class="w-full py-2.5 pl-9 pr-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm md:w-full">
             </div>
 
             <div class="relative flex-1 w-full sm:w-64">
