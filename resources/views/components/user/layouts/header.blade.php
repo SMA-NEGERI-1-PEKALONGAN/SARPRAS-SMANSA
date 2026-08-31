@@ -139,7 +139,7 @@
 
                 @guest
                 <a href="{{ route('login') }}" wire:navigate
-                    class="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-slate-100 hover:text-slate-900 dark:text-white dark:hover:bg-slate-800">Masuk</a>
+                    class="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-slate-100 hover:text-slate-900 dark:text-white dark:hover:bg-slate-800 dark:hover:text-white">Masuk</a>
                 <a href="{{ route('booking') }}" wire:navigate
                     class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/25">
                     <span>Mulai Peminjaman</span>
@@ -343,7 +343,7 @@
             <div class="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800">
                 <div class="grid grid-cols-2 gap-2.5">
                     <a href="{{ route('login') }}" wire:navigate @click="closeMenu()"
-                        class="flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+                        class="flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white">
                         Masuk
                     </a>
                     <a href="{{ route('booking') }}" wire:navigate @click="closeMenu()"

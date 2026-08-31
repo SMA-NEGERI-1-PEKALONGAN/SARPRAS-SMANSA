@@ -1155,7 +1155,7 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
                 <h3 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Login Diperlukan</h3>
                 <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Silakan login terlebih dahulu untuk melakukan peminjaman fasilitas.</p>
                 <div class="flex gap-3">
-                    <button wire:click="closeLoginAlert" class="flex-1 py-2.5 text-sm font-semibold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300">Batal</button>
+                    <button wire:click="closeLoginAlert" class="flex-1 py-2.5 text-sm font-semibold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600">Batal</button>
                     <button wire:click="confirmLoginRedirect" class="flex-1 py-2.5 text-sm font-semibold text-white rounded-xl bg-brand-600 hover:bg-brand-700">OK, Login</button>
                 </div>
             </div>
