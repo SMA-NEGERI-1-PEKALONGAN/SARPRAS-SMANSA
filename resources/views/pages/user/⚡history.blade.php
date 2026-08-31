@@ -77,6 +77,7 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
     {
         return [
             'borrowings' => $this->baseQuery()
+                ->orderByDesc('created_at')
                 ->orderByDesc('tanggal_mulai')
                 ->orderByDesc('id')
                 ->paginate(10),
@@ -225,6 +226,7 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
 
         $this->selectedBorrowingId = $borrowing->id;
         $this->selectedBorrowing = $this->toSelectedArray($borrowing);
+
         $this->returnDetails = $borrowing->details
             ->filter(fn ($detail) => $detail->status === 'Disetujui')
             ->map(fn ($detail) => [
@@ -234,15 +236,24 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
                 'code' => $detail->room?->kode_ruangan ?? $detail->item?->kode_barang ?? '-',
                 'jumlah' => (int) $detail->jumlah,
                 'status' => $detail->status,
-                'file' => $detail->getAttribute('bukti_pengembalian') ?? $detail->getAttribute('file_bukti_pengembalian') ?? null,
+                'fasilitas' => $detail->room
+                    ? $this->parseFacilities($detail->getAttribute('fasilitas'))
+                    : [],
+                'file' => $detail->getAttribute('bukti_pengembalian')
+                    ?? $detail->getAttribute('file_bukti_pengembalian')
+                    ?? null,
                 'catatan_pengembalian' => $detail->getAttribute('catatan_pengembalian') ?? '',
-            ])->values()->toArray();
+            ])
+            ->values()
+            ->toArray();
 
         $this->returnUploads = [];
         $this->returnNotes = [];
+
         foreach ($this->returnDetails as $i => $detail) {
             $this->returnNotes[$i] = $detail['catatan_pengembalian'];
         }
+
         $this->file_bukti_pengembalian = null;
         $this->catatan_pengembalian = '';
         $this->returnStatus = 'Selesai';
@@ -274,13 +285,22 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
         ];
 
         foreach ($this->returnDetails as $index => $detail) {
-            if (array_key_exists($index, $this->returnUploads) && $this->returnUploads[$index]) {
-                $rules["returnUploads.$index"] = ['file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:1024'];
-            }
-            $rules["returnNotes.$index"] = ['nullable', 'string', 'max:2000'];
+            $rules["returnUploads.$index"] = [
+                'required',
+                'file',
+                'mimes:pdf,jpg,jpeg,png,webp',
+                'max:1024',
+            ];
+
+            $rules["returnNotes.$index"] = [
+                'nullable',
+                'string',
+                'max:2000',
+            ];
         }
 
         $this->validate($rules, [
+            'returnUploads.*.required' => 'Bukti pengembalian wajib diunggah.',
             'returnUploads.*.max' => 'Bukti pengembalian maksimal 1 MB.',
             'returnUploads.*.mimes' => 'Bukti harus berupa PDF atau gambar.',
         ]);
@@ -408,6 +428,43 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
         $this->selectedBorrowing = $this->toSelectedArray($borrowing);
     }
 
+    protected function parseFacilities($value): array
+    {
+        if (is_array($value)) {
+            return collect($value)->map(fn ($item) => trim((string) $item))->filter()->values()->toArray();
+        }
+
+        if (!$value) {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return collect($decoded)->map(fn ($item) => trim((string) $item))->filter()->values()->toArray();
+        }
+
+        return collect(explode(',', (string) $value))->map(fn ($item) => trim($item))->filter()->values()->toArray();
+    }
+
+    public function facilityIcon(string $facility): string
+    {
+        $facility = strtolower($facility);
+
+        return match (true) {
+            str_contains($facility, 'ac') || str_contains($facility, 'pendingin') => 'fa-snowflake',
+            str_contains($facility, 'proyektor') || str_contains($facility, 'projector') => 'fa-video',
+            str_contains($facility, 'wifi') || str_contains($facility, 'internet') => 'fa-wifi',
+            str_contains($facility, 'komputer') || str_contains($facility, 'pc') => 'fa-computer',
+            str_contains($facility, 'sound') || str_contains($facility, 'speaker') || str_contains($facility, 'audio') => 'fa-volume-high',
+            str_contains($facility, 'tv') || str_contains($facility, 'smart') => 'fa-tv',
+            str_contains($facility, 'kamera') || str_contains($facility, 'camera') => 'fa-camera',
+            str_contains($facility, 'meja') => 'fa-table',
+            str_contains($facility, 'kursi') => 'fa-chair',
+            default => 'fa-circle-check',
+        };
+    }
+
     protected function toSelectedArray(Borrowing $borrowing): array
     {
         return [
@@ -423,17 +480,24 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
             'catatan_pengembalian' => $borrowing->getAttribute('catatan_pengembalian') ?? '',
             'file_lampiran' => $borrowing->getAttribute('file_lampiran') ?? null,
             'file_bukti_pengembalian' => $borrowing->getAttribute('file_bukti_pengembalian') ?? null,
-            'details' => $borrowing->details->map(fn (BorrowingDetail $detail) => [
-                'id' => $detail->id,
-                'type' => $detail->room ? 'Ruangan' : 'Barang',
-                'name' => $detail->room?->nama_ruangan ?? $detail->item?->nama_barang ?? '-',
-                'code' => $detail->room?->kode_ruangan ?? $detail->item?->kode_barang ?? '-',
-                'jumlah' => (int) $detail->jumlah,
-                'status' => $detail->status,
-                'catatan' => $detail->getAttribute('catatan') ?? '',
-                'file_bukti_pengembalian' => $detail->getAttribute('file_bukti_pengembalian') ?? null,
-                'catatan_pengembalian' => $detail->getAttribute('catatan_pengembalian') ?? '',
-            ])->values()->toArray(),
+            'details' => $borrowing->details->map(function (BorrowingDetail $detail) {
+                return [
+                    'id' => $detail->id,
+                    'type' => $detail->room ? 'Ruangan' : 'Barang',
+                    'name' => $detail->room?->nama_ruangan ?? $detail->item?->nama_barang ?? '-',
+                    'code' => $detail->room?->kode_ruangan ?? $detail->item?->kode_barang ?? '-',
+                    'jumlah' => (int) $detail->jumlah,
+                    'status' => $detail->status,
+                    'fasilitas' => $detail->room
+                        ? $this->parseFacilities($detail->getAttribute('fasilitas'))
+                        : [],
+                    'catatan' => $detail->getAttribute('catatan') ?? '',
+                    'file_bukti_pengembalian' => $detail->getAttribute('bukti_pengembalian')
+                        ?? $detail->getAttribute('file_bukti_pengembalian')
+                        ?? null,
+                    'catatan_pengembalian' => $detail->getAttribute('catatan_pengembalian') ?? '',
+                ];
+            })->values()->toArray(),
         ];
     }
 
@@ -452,6 +516,85 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
 ?>
 
 <div class="w-full max-w-7xl px-4 py-8 mx-auto mt-8 sm:px-6 lg:px-8 " x-data>
+    <style>
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 10mm;
+            }
+
+            html,
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                min-height: 0 !important;
+                background: #fff !important;
+                overflow: visible !important;
+            }
+
+            body.printing-borrowing * {
+                visibility: hidden !important;
+            }
+
+            body.printing-borrowing #history-print-card,
+            body.printing-borrowing #history-print-card * {
+                visibility: visible !important;
+            }
+
+            body.printing-borrowing #history-print-card {
+                position: absolute !important;
+                top: 0 !important;
+                left: 50% !important;
+                width: 190mm !important;
+                max-width: 190mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                transform: translateX(-50%) !important;
+                background: #fff !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                overflow: visible !important;
+            }
+
+            body.printing-borrowing #history-print-preview {
+                position: static !important;
+                display: block !important;
+                width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                min-height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: visible !important;
+                background: #fff !important;
+            }
+
+            body.printing-borrowing .print-modal {
+                position: static !important;
+                display: block !important;
+                width: auto !important;
+                max-width: none !important;
+                max-height: none !important;
+                overflow: visible !important;
+                background: transparent !important;
+            }
+
+            body.printing-borrowing .no-print {
+                display: none !important;
+            }
+
+            body.printing-borrowing .print-shadow {
+                box-shadow: none !important;
+            }
+
+            body.printing-borrowing #history-print-card {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+        </style>
+
     <div class="mt-8 mb-6 sm:mb-8">
         <h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">Riwayat Peminjaman</h1>
         <p class="text-sm leading-relaxed text-slate-500 dark:text-slate-400">Pantau status persetujuan, kelola, dan unduh izin peminjaman Anda di sini.</p>
@@ -474,104 +617,231 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
     </div>
 
     <div class="relative">
-        <div wire:loading.flex wire:target="search,statusFilter,gotoPage,nextPage,previousPage" class="absolute inset-0 z-30 items-start justify-center rounded-3xl bg-white/70 px-4 pt-16 backdrop-blur-[2px] dark:bg-slate-900/70">
-            <div class="flex items-center gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-3 text-xs font-bold text-brand-600 shadow-lg dark:border-brand-900/50 dark:bg-slate-900 dark:text-brand-400">
-                <span class="flex h-7 w-7 items-center justify-center rounded-xl bg-brand-50 dark:bg-brand-900/30"><i class="fa-solid fa-spinner animate-spin"></i></span>
+        <div wire:loading.flex wire:target="search,statusFilter,gotoPage,nextPage,previousPage"
+            class="absolute inset-0 z-30 flex items-start justify-center pt-10 sm:pt-12 rounded-2xl sm:rounded-3xl bg-white/75 backdrop-blur-[2px] dark:bg-slate-900/75">
+            <div
+                class="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-bold rounded-xl border border-brand-100 bg-white text-brand-600 shadow-lg dark:border-brand-900/50 dark:bg-slate-900 dark:text-brand-400">
+                <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-900/30">
+                    <i class="text-xs fa-solid fa-spinner animate-spin"></i>
+                </span>
                 <span>Memuat riwayat...</span>
             </div>
         </div>
 
-        <div id="history-print-area" class="space-y-4">
+        <div id="history-print-area" class="space-y-2.5 sm:space-y-3">
+
             @forelse($borrowings as $borrowing)
-                @php($status = $borrowing->status ?? '-')
-                <article wire:key="history-{{ $borrowing->id }}" class="overflow-hidden border shadow-sm rounded-3xl border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700">
-                    <div class="p-4 sm:p-5 lg:p-6">
-                        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                            <div class="min-w-0 flex-1">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <span class="inline-flex items-center gap-1 rounded-lg bg-brand-50 px-2.5 py-1 text-[10px] font-bold text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
-                                        <i class="text-[9px] fa-solid fa-hashtag"></i>{{ $borrowing->kode_transaksi }}
-                                    </span>
-                                    <span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold {{ $this->statusClass($status) }}">{{ $status }}</span>
-                                </div>
-                                <h3 class="mt-2 text-sm font-bold leading-relaxed break-words text-slate-900 sm:text-base dark:text-white">{{ $borrowing->tujuan ?: 'Peminjaman fasilitas' }}</h3>
+            @php($status = $borrowing->status ?? '-')
+
+            <article wire:key="history-{{ $borrowing->id }}"
+                class="overflow-hidden bg-white border rounded-2xl sm:rounded-3xl border-slate-200 dark:bg-slate-800 dark:border-slate-700 transition-all duration-200 hover:border-slate-300 hover:shadow-md dark:hover:border-slate-600">
+                <div class="p-3.5 sm:p-5 lg:p-6">
+
+                    {{-- HEADER --}}
+                    <div class="flex items-start gap-3">
+                        <div
+                            class="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400 shrink-0">
+                            <i class="text-xs sm:text-sm fa-solid fa-clipboard-list"></i>
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span
+                                    class="inline-flex items-center gap-1 px-2 py-1 text-[8px] sm:text-[9px] font-bold rounded-md bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                                    <i class="text-[7px] fa-solid fa-hashtag"></i>
+                                    {{ $borrowing->kode_transaksi }}
+                                </span>
+
+                                <span
+                                    class="inline-flex items-center px-2 py-1 text-[8px] sm:text-[9px] font-bold rounded-full {{ $this->statusClass($status) }}">
+                                    {{ $status }}
+                                </span>
                             </div>
-                            <div class="w-full shrink-0 rounded-xl bg-slate-50 px-3 py-2 sm:w-fit lg:min-w-[220px] lg:text-right dark:bg-slate-900/60">
-                                <div class="text-[9px] font-bold uppercase tracking-wide text-slate-400">Periode Peminjaman</div>
-                                <div class="mt-1 text-xs font-semibold text-slate-800 dark:text-slate-200">{{ optional($borrowing->tanggal_mulai)->format('d M Y H:i') }}</div>
-                                <div class="text-[10px] text-slate-400">s/d {{ optional($borrowing->tanggal_selesai)->format('d M Y H:i') }}</div>
+
+                            <h3
+                                class="mt-1.5 text-[12px] sm:text-[15px] font-extrabold leading-snug text-slate-900 dark:text-white break-words">
+                                {{ $borrowing->tujuan ?: 'Peminjaman fasilitas' }}
+                            </h3>
+                        </div>
+                    </div>
+
+                    {{-- DATE SUMMARY --}}
+                    <div class="grid grid-cols-1 gap-2.5 mt-4 sm:grid-cols-2">
+
+                        {{-- TANGGAL PENGAJUAN --}}
+                        <div
+                            class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-brand-50/70 border border-brand-100 dark:bg-brand-500/5 dark:border-brand-500/20">
+                            <div
+                                class="flex items-center justify-center w-8 h-8 rounded-lg bg-white text-brand-600 dark:bg-slate-800 dark:text-brand-400 shrink-0 shadow-sm">
+                                <i class="text-[10px] fa-solid fa-paper-plane"></i>
+                            </div>
+
+                            <div class="min-w-0">
+                                <div class="text-[8px] sm:text-[9px] font-bold uppercase tracking-wide text-brand-500">
+                                    Tanggal Pengajuan
+                                </div>
+
+                                <div class="mt-0.5 text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                                    {{ optional($borrowing->created_at)->format('d M Y, H:i') ?? '-' }}
+                                </div>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 gap-3 mt-4 sm:grid-cols-2 lg:grid-cols-3">
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/60">
-                                <div class="flex items-center gap-2">
-                                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400"><i class="text-xs fa-solid fa-user"></i></span>
-                                    <div class="min-w-0">
-                                        <div class="text-[9px] font-bold uppercase tracking-wide text-slate-400">Peminjam</div>
-                                        <div class="mt-0.5 truncate text-xs font-bold text-slate-800 dark:text-slate-200">{{ $borrowing->user?->name ?? '-' }}</div>
-                                    </div>
-                                </div>
-                                <div class="mt-2 text-[10px] text-slate-400">{{ $borrowing->user?->no_hp ?? $borrowing->user?->no_wa ?? '-' }}</div>
+                        {{-- PERIODE --}}
+                        <div
+                            class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100 dark:bg-slate-900/50 dark:border-slate-700">
+                            <div
+                                class="flex items-center justify-center w-8 h-8 rounded-lg bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400 shrink-0 shadow-sm">
+                                <i class="text-[10px] fa-regular fa-calendar"></i>
                             </div>
 
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/60">
-                                <div class="flex items-center gap-2">
-                                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400"><i class="text-xs fa-solid fa-list-check"></i></span>
-                                    <div>
-                                        <div class="text-[9px] font-bold uppercase tracking-wide text-slate-400">Detail Peminjaman</div>
-                                        <div class="mt-0.5 text-xs font-bold text-slate-800 dark:text-slate-200">{{ $borrowing->details->count() }} item</div>
-                                    </div>
+                            <div class="min-w-0">
+                                <div class="text-[8px] sm:text-[9px] font-bold uppercase tracking-wide text-slate-400">
+                                    Periode Peminjaman
                                 </div>
-                            </div>
 
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/60">
-                                <div class="flex items-center gap-2">
-                                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400"><i class="text-xs fa-solid fa-paperclip"></i></span>
-                                    <div class="min-w-0">
-                                        <div class="text-[9px] font-bold uppercase tracking-wide text-slate-400">Lampiran</div>
-                                        <div class="mt-0.5 truncate text-xs font-bold text-slate-800 dark:text-slate-200">{{ $borrowing->file_lampiran ? 'Lampiran tersedia' : 'Tidak ada lampiran' }}</div>
-                                    </div>
+                                <div class="mt-0.5 text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                                    {{ optional($borrowing->tanggal_mulai)->format('d M Y, H:i') }}
                                 </div>
-                            </div>
-                        </div>
 
-                        <div class="flex flex-col gap-2 pt-4 mt-4 border-t border-slate-100 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between dark:border-slate-700">
-                            <div class="flex items-center gap-2 text-[10px] text-slate-400"><i class="fa-solid fa-circle-info"></i><span>Periksa detail transaksi dan fasilitas yang dipinjam.</span></div>
-                            <div class="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
-                                <button type="button" wire:click="openDetail({{ $borrowing->id }})" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">
-                                    <i class="fa-solid fa-eye"></i> Detail
-                                </button>
-
-                                @if($borrowing->file_lampiran)
-                                    <a href="{{ \Illuminate\Support\Facades\Storage::url($borrowing->file_lampiran) }}" target="_blank" rel="noopener" class="no-print inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-                                        <i class="fa-solid fa-paperclip"></i> Lampiran
-                                    </a>
-                                @endif
-
-                                @if($status === 'Menunggu')
-                                    <button type="button" wire:click="openCancel({{ $borrowing->id }})" class="no-print inline-flex items-center justify-center gap-2 rounded-xl bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-300">
-                                        <i class="fa-solid fa-ban"></i> Batalkan
-                                    </button>
-                                @elseif($status === 'Disetujui')
-                                    <button type="button" wire:click="openReturn({{ $borrowing->id }})" class="no-print inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-700">
-                                        <i class="fa-solid fa-box-open"></i> Pengembalian
-                                    </button>
-                                    <button type="button" wire:click="openPrint({{ $borrowing->id }})" class="no-print inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-700">
-                                        <i class="fa-solid fa-print"></i> Cetak
-                                    </button>
-                                @endif
+                                <div class="text-[9px] sm:text-[10px] text-slate-400">
+                                    s/d {{ optional($borrowing->tanggal_selesai)->format('d M Y, H:i') }}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </article>
-            @empty
-                <div class="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center dark:border-slate-700 dark:bg-slate-800">
-                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-900"><i class="text-xl fa-solid fa-clock-rotate-left"></i></div>
-                    <h3 class="mt-4 text-sm font-bold text-slate-700 dark:text-slate-200">Belum ada riwayat peminjaman</h3>
-                    <p class="mt-1 text-xs text-slate-400">Data peminjaman kamu akan muncul di halaman ini.</p>
+
+                    {{-- META --}}
+                    <div class="grid grid-cols-2 gap-2 mt-2.5 sm:grid-cols-3">
+
+                        {{-- PEMINJAM --}}
+                        <div
+                            class="flex items-center gap-2 px-3 py-2.5 min-w-0 rounded-xl bg-slate-50 dark:bg-slate-900/50">
+                            <div
+                                class="flex items-center justify-center w-7 h-7 rounded-lg bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400 shrink-0">
+                                <i class="text-[9px] fa-solid fa-user"></i>
+                            </div>
+
+                            <div class="min-w-0">
+                                <div class="text-[7px] sm:text-[8px] font-bold uppercase tracking-wide text-slate-400">
+                                    Peminjam
+                                </div>
+
+                                <div
+                                    class="mt-0.5 text-[9px] sm:text-[10px] font-bold truncate text-slate-700 dark:text-slate-200">
+                                    {{ $borrowing->user?->name ?? '-' }}
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- ITEM --}}
+                        <div
+                            class="flex items-center gap-2 px-3 py-2.5 min-w-0 rounded-xl bg-slate-50 dark:bg-slate-900/50">
+                            <div
+                                class="flex items-center justify-center w-7 h-7 rounded-lg bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400 shrink-0">
+                                <i class="text-[9px] fa-solid fa-list-check"></i>
+                            </div>
+
+                            <div class="min-w-0">
+                                <div class="text-[7px] sm:text-[8px] font-bold uppercase tracking-wide text-slate-400">
+                                    Item
+                                </div>
+
+                                <div class="mt-0.5 text-[9px] sm:text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                                    {{ $borrowing->details->count() }} item
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- LAMPIRAN --}}
+                        <div
+                            class="flex items-center gap-2 px-3 py-2.5 col-span-2 min-w-0 rounded-xl bg-slate-50 dark:bg-slate-900/50 sm:col-span-1">
+                            <div
+                                class="flex items-center justify-center w-7 h-7 rounded-lg bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400 shrink-0">
+                                <i class="text-[9px] fa-solid fa-paperclip"></i>
+                            </div>
+
+                            <div class="min-w-0">
+                                <div class="text-[7px] sm:text-[8px] font-bold uppercase tracking-wide text-slate-400">
+                                    Lampiran
+                                </div>
+
+                                <div
+                                    class="mt-0.5 text-[9px] sm:text-[10px] font-bold truncate text-slate-700 dark:text-slate-200">
+                                    {{ $borrowing->file_lampiran ? 'Tersedia' : 'Tidak ada' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ACTION --}}
+                    <div class="pt-3 mt-3 border-t border-slate-100 dark:border-slate-700">
+
+                        <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+
+                            {{-- DETAIL --}}
+                            <button type="button" wire:click="openDetail({{ $borrowing->id }})"
+                                class="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-[10px] sm:text-[11px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 transition-colors">
+                                <i class="text-[9px] fa-solid fa-eye"></i>
+                                Detail
+                            </button>
+
+                            {{-- LAMPIRAN --}}
+                            @if($borrowing->file_lampiran)
+                            <a href="{{ \Illuminate\Support\Facades\Storage::url($borrowing->file_lampiran) }}"
+                                target="_blank" rel="noopener"
+                                class="no-print inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg border border-slate-200 bg-white text-[10px] sm:text-[11px] font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-colors">
+                                <i class="text-[9px] fa-solid fa-paperclip"></i>
+                                Lampiran
+                            </a>
+                            @endif
+
+                            {{-- BATAL --}}
+                            @if($status === 'Menunggu')
+                            <button type="button" wire:click="openCancel({{ $borrowing->id }})"
+                                class="no-print col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-[10px] sm:text-[11px] font-bold bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-300 transition-colors">
+                                <i class="text-[9px] fa-solid fa-ban"></i>
+                                Batalkan
+                            </button>
+                            @endif
+
+                            {{-- DISETUJUI --}}
+                            @if($status === 'Disetujui')
+                            <button type="button" wire:click="openReturn({{ $borrowing->id }})"
+                                class="no-print col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-[10px] sm:text-[11px] font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">
+                                <i class="text-[9px] fa-solid fa-box-open"></i>
+                                Pengembalian
+                            </button>
+
+                            <button type="button" wire:click="openPrint({{ $borrowing->id }})"
+                                class="no-print col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-[10px] sm:text-[11px] font-bold bg-brand-600 text-white hover:bg-brand-700 transition-colors">
+                                <i class="text-[9px] fa-solid fa-print"></i>
+                                Cetak
+                            </button>
+                            @endif
+                        </div>
+                    </div>
                 </div>
+            </article>
+
+            @empty
+            <div
+                class="px-5 py-12 text-center bg-white border border-dashed rounded-2xl sm:rounded-3xl border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                <div
+                    class="flex items-center justify-center w-12 h-12 mx-auto rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-900">
+                    <i class="text-lg fa-solid fa-clock-rotate-left"></i>
+                </div>
+
+                <h3 class="mt-4 text-sm font-extrabold text-slate-700 dark:text-slate-200">
+                    Belum ada riwayat peminjaman
+                </h3>
+
+                <p class="max-w-xs mx-auto mt-1 text-[10px] sm:text-xs leading-relaxed text-slate-400">
+                    Data peminjaman Anda akan muncul di halaman ini.
+                </p>
+            </div>
             @endforelse
+
         </div>
     </div>
 
@@ -579,186 +849,363 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
 
     {{-- MODAL DETAIL --}}
     <template x-teleport="body">
-        <div x-data="{ open: @entangle('isDetailModalOpen') }" x-show="open" x-cloak class="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5">
+        <div x-data="{ open: @entangle('isDetailModalOpen') }" x-show="open" x-cloak class="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-4">
             <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"></div>
-            <div x-show="open" x-transition class="hide-scrollbar relative flex w-full max-w-4xl max-h-[94vh] flex-col overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
-                <div class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white/95 px-4 py-4 backdrop-blur sm:px-6 dark:border-slate-800 dark:bg-slate-900/95">
-                    <div class="min-w-0">
-                        <h2 class="text-base font-bold text-slate-900 sm:text-lg dark:text-white">Detail Peminjaman</h2>
-                        <p class="truncate text-[10px] font-bold text-brand-600 sm:text-xs dark:text-brand-400">{{ $selectedBorrowing['kode_transaksi'] ?? '-' }}</p>
+            <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-[0.98] translate-y-2" x-transition:enter-end="opacity-100 scale-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100 translate-y-0" x-transition:leave-end="opacity-0 scale-[0.98] translate-y-2" class="relative flex w-full max-w-5xl max-h-[96vh] flex-col overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
+                <div class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-4 py-3.5 backdrop-blur sm:px-6 sm:py-4 dark:border-slate-800 dark:bg-slate-900/95">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                            <i class="text-sm fa-solid fa-file-lines"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-sm font-extrabold text-slate-900 sm:text-base dark:text-white">Detail Peminjaman</h2>
+                                <p class="mt-0.5 truncate text-[9px] font-semibold text-brand-600 sm:text-[10px] dark:text-brand-400">{{ $selectedBorrowing['kode_transaksi'] ?? '-' }}</p>
+                            </div>
+                        </div>
                     </div>
-                    <button type="button" wire:click="closeDetail" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:text-rose-500 dark:bg-slate-800"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" wire:click="closeDetail" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-rose-50 hover:text-rose-500 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-400" aria-label="Tutup modal">
+                        <i class="text-xs fa-solid fa-xmark"></i>
+                    </button>
                 </div>
-
-                <div class="min-h-0 flex-1 overflow-y-auto hide-scrollbar">
-                    <div class="space-y-5 p-4 sm:p-6">
-                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800"><div class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Status</div><div class="mt-2"><span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold {{ $this->statusClass($selectedBorrowing['status'] ?? '') }}">{{ $selectedBorrowing['status'] ?? '-' }}</span></div></div>
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800"><div class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Peminjam</div><div class="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">{{ $selectedBorrowing['nama'] ?? '-' }}</div><div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ $selectedBorrowing['no_hp'] ?? '-' }}</div></div>
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800"><div class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Mulai</div><div class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{{ $selectedBorrowing['tanggal_mulai'] ?? '-' }}</div></div>
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800"><div class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Selesai</div><div class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{{ $selectedBorrowing['tanggal_selesai'] ?? '-' }}</div></div>
-                        </div>
-
-                        <div>
-                            <div class="mb-2 text-xs font-bold text-slate-700 dark:text-slate-300">Tujuan / Keperluan</div>
-                            <div class="break-words rounded-2xl bg-slate-50 p-4 text-sm leading-relaxed text-slate-700 dark:bg-slate-800 dark:text-slate-300">{{ $selectedBorrowing['tujuan'] ?? '-' }}</div>
-                        </div>
-
-                        <div >
-                            <div class="rounded-2xl border border-amber-100 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-900/20">
-                                <div class="flex items-center gap-2 text-xs font-bold text-amber-800 dark:text-amber-200"><i class="fa-solid fa-note-sticky"></i> Catatan Admin</div>
-                                <div class="mt-2 break-words text-sm leading-relaxed text-amber-800 dark:text-amber-200">{{ $selectedBorrowing['catatan_admin'] ?? 'Tidak ada catatan admin.' }}</div>
+            <div class="min-h-0 flex-1 overflow-y-auto hide-scrollbar">
+                <div class="space-y-5 p-4 sm:p-6">
+                    <section>
+                        <div class="mb-3 flex items-center justify-between gap-3">
+                            <div>
+                                <h3 class="text-xs font-extrabold text-slate-800 sm:text-sm dark:text-white">Ringkasan Peminjaman</h3>
+                                <p class="mt-0.5 text-[9px] sm:text-[10px] text-slate-400">Informasi utama pengajuan peminjaman.</p>
                             </div>
-                            
+                            <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[8px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                <i class="text-[8px] fa-solid fa-circle-info"></i>
+                                Detail
+                            </span>
                         </div>
-                        <div>
-                            <div class="mb-3 flex items-center justify-between gap-3">
-                                <div class="text-xs font-bold text-slate-700 dark:text-slate-300">Fasilitas yang Dipinjam</div>
-                                <div class="text-[10px] font-medium text-slate-400">{{ count($selectedBorrowing['details'] ?? []) }} item</div>
-                            </div>
-                            <div class="hidden md:block">
-                                <div class=" rounded-2xl border border-slate-200 dark:border-slate-800">
-                                    {{-- Hint geser --}} 
-                                    <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3 py-2 text-[10px] text-slate-400 dark:border-slate-800 dark:bg-slate-800/70"> 
-                                        <span><i class="fa-solid fa-arrows-left-right mr-1"></i> Geser tabel untuk melihat detail lainnya </span> 
-                                    </div>
-                                    <div class="overflow-x-auto overflow-y-hidden hide-scrollbar">
-                                        <table class="min-w-[1050px] w-full text-left text-xs">
-                                            <thead class="bg-slate-50 dark:bg-slate-800">
-                                                <tr>
-                                                    <th class="w-[120px] px-4 py-3 font-bold uppercase tracking-wide text-slate-400">Tipe</th>
-                                                    <th class="w-[130px] px-4 py-3 font-bold uppercase tracking-wide text-slate-400">Kode</th>
-                                                    <th class="w-[220px] px-4 py-3 font-bold uppercase tracking-wide text-slate-400">Nama</th>
-                                                    <th class="w-[80px] px-4 py-3 text-center font-bold uppercase tracking-wide text-slate-400">Qty</th>
-                                                    <th class="w-[130px] px-4 py-3 text-center font-bold uppercase tracking-wide text-slate-400">Status</th>
-                                                    <th class="w-[220px] px-4 py-3 font-bold uppercase tracking-wide text-slate-400">Catatan</th>
-                                                    <th class="w-[240px] px-4 py-3 font-bold uppercase tracking-wide text-slate-400">Pengembalian</th>
-                                                    <th class="w-[90px] px-4 py-3 text-center font-bold uppercase tracking-wide text-slate-400">Bukti</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                                                @forelse(($selectedBorrowing['details'] ?? []) as $detail)
-                                                    <tr class="align-top transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/50">
-                                                        <td class="px-4 py-4 text-slate-600 dark:text-slate-300">
-                                                            <span class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $detail['type'] }}</span>
-                                                        </td>
-                                                        <td class="px-4 py-4 font-semibold text-brand-600 dark:text-brand-400">#{{ $detail['code'] }}</td>
-                                                        <td class="px-4 py-4">
-                                                            <div class="max-w-[200px] break-words font-semibold leading-relaxed text-slate-900 dark:text-white">{{ $detail['name'] }}</div>
-                                                        </td>
-                                                        <td class="px-4 py-4 text-center">
-                                                            <span class="font-bold text-slate-900 dark:text-white">{{ $detail['jumlah'] }}</span>
-                                                        </td>
-                                                        <td class="px-4 py-4 text-center">
-                                                            <span class="inline-flex max-w-full whitespace-nowrap rounded-full px-2.5 py-1 text-[9px] font-bold {{ $this->statusClass($detail['status']) }}">{{ $detail['status'] }}</span>
-                                                        </td>
-                                                        <td class="px-4 py-4 text-slate-600 dark:text-slate-300">
-                                                            <div class="max-w-[210px] break-words leading-relaxed">{{ $detail['catatan'] ?: '-' }}</div>
-                                                        </td>
-                                                        <td class="px-4 py-4 text-slate-600 dark:text-slate-300">
-                                                            <div class="max-w-[230px] break-words leading-relaxed">{{ $detail['catatan_pengembalian'] ?: '-' }}</div>
-                                                        </td>
-                                                        <td class="px-4 py-4 text-center">
-                                                            @if(!empty($detail['file_bukti_pengembalian']))
-                                                                <a href="{{ \Illuminate\Support\Facades\Storage::url($detail['file_bukti_pengembalian']) }}" target="_blank" rel="noopener" title="Lihat bukti pengembalian" class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/40">
-                                                                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                                                                </a>
-                                                            @else
-                                                                <span class="text-slate-400">-</span>
-                                                            @endif
-                                                        </td>
-                                                    </tr>
-                                                @empty
-                                                    <tr>
-                                                        <td colspan="8" class="p-10 text-center text-slate-400">
-                                                            <div class="flex flex-col items-center justify-center">
-                                                                <i class="fa-solid fa-box-open mb-2 text-xl text-slate-300 dark:text-slate-600"></i>
-                                                                <span>Tidak ada rincian fasilitas.</span>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                @endforelse
-                                            </tbody>
-                                        </table>
+
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                            <div class="rounded-2xl border border-slate-200 bg-white p-3.5 dark:border-slate-800 dark:bg-slate-800/60">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                                        <i class="text-[10px] fa-solid fa-chart-simple"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">Status</div>
+                                        <div class="mt-1">
+                                            <span class="inline-flex max-w-full rounded-full px-2 py-1 text-[9px] font-bold {{ $this->statusClass($selectedBorrowing['status'] ?? '') }}">{{ $selectedBorrowing['status'] ?? '-' }}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="space-y-3 md:hidden">
-                                @forelse(($selectedBorrowing['details'] ?? []) as $detail)
-                                    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                                        <div class="flex items-start justify-between gap-3">
-                                            <div class="min-w-0 flex-1">
-                                                <div class="flex flex-wrap items-center gap-2">
-                                                    <span class="rounded-md bg-slate-100 px-2 py-1 text-[9px] font-bold uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ $detail['type'] }}</span>
-                                                    <span class="text-[10px] font-semibold text-brand-600 dark:text-brand-400">#{{ $detail['code'] }}</span>
-                                                </div>
-                                                <div class="mt-1.5 break-words text-sm font-bold text-slate-900 dark:text-white">{{ $detail['name'] }}</div>
-                                            </div>
-                                            <span class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[9px] font-bold {{ $this->statusClass($detail['status']) }}">{{ $detail['status'] }}</span>
-                                        </div>
-                                        <div class="mt-3 grid grid-cols-2 gap-3">
-                                            <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-                                                <div class="text-[9px] font-bold uppercase text-slate-400">Jumlah</div>
-                                                <div class="mt-1 text-sm font-bold text-slate-900 dark:text-white">{{ $detail['jumlah'] }}</div>
-                                            </div>
-                                            <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-                                                <div class="text-[9px] font-bold uppercase text-slate-400">Bukti</div>
-                                                <div class="mt-1.5">
+                            <div class="rounded-2xl border border-slate-200 bg-white p-3.5 dark:border-slate-800 dark:bg-slate-800/60">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                                        <i class="text-[10px] fa-solid fa-user"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">Peminjam</div>
+                                        <div class="mt-1 truncate text-[11px] font-bold text-slate-800 dark:text-white">{{ $selectedBorrowing['nama'] ?? '-' }}</div>
+                                        <div class="mt-0.5 truncate text-[9px] text-slate-400">{{ $selectedBorrowing['no_hp'] ?? '-' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rounded-2xl border border-slate-200 bg-white p-3.5 dark:border-slate-800 dark:bg-slate-800/60">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                                        <i class="text-[10px] fa-regular fa-calendar-plus"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">Mulai</div>
+                                        <div class="mt-1 break-words text-[11px] font-bold text-slate-800 dark:text-white">{{ $selectedBorrowing['tanggal_mulai'] ?? '-' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rounded-2xl border border-slate-200 bg-white p-3.5 dark:border-slate-800 dark:bg-slate-800/60">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                                        <i class="text-[10px] fa-regular fa-calendar-check"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">Selesai</div>
+                                        <div class="mt-1 break-words text-[11px] font-bold text-slate-800 dark:text-white">{{ $selectedBorrowing['tanggal_selesai'] ?? '-' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <div class="mb-2.5 flex items-center gap-2">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                                <i class="text-[10px] fa-solid fa-bullseye"></i>
+                            </span>
+                            <div>
+                                <h3 class="text-xs font-extrabold text-slate-800 sm:text-sm dark:text-white">Tujuan / Keperluan</h3>
+                                <p class="text-[9px] text-slate-400">Tujuan penggunaan fasilitas.</p>
+                            </div>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3.5 text-[11px] leading-relaxed text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300 sm:text-xs">
+                            {{ $selectedBorrowing['tujuan'] ?? '-' }}
+                        </div>
+                    </section>
+
+                    <section>
+                        <div class="rounded-2xl border border-amber-200/70 bg-amber-50/70 p-3.5 dark:border-amber-900/40 dark:bg-amber-900/15">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+                                    <i class="text-xs fa-solid fa-note-sticky"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-[10px] font-extrabold text-amber-800 sm:text-xs dark:text-amber-200">Catatan Admin</div>
+                                    <div class="mt-1 text-[10px] leading-relaxed text-amber-800 sm:text-xs dark:text-amber-200">
+                                        {{ $selectedBorrowing['catatan_admin'] ?? 'Tidak ada catatan admin.' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <div class="mb-3 flex items-end justify-between gap-3">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                                        <i class="text-[10px] fa-solid fa-boxes-stacked"></i>
+                                    </span>
+                                    <div>
+                                        <h3 class="text-xs font-extrabold text-slate-800 sm:text-sm dark:text-white">Fasilitas yang Dipinjam</h3>
+                                        <p class="text-[9px] text-slate-400">Rincian fasilitas dalam pengajuan.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                {{ count($selectedBorrowing['details'] ?? []) }} item
+                            </span>
+                        </div>
+
+                        <div class="hidden lg:block overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
+                            <div class="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-800/70">
+                                <div class="flex items-center gap-2 text-[9px] font-semibold text-slate-400">
+                                    <i class="fa-solid fa-arrows-left-right"></i>
+                                    Geser tabel untuk melihat informasi lainnya
+                                </div>
+                                <span class="text-[9px] text-slate-400">{{ count($selectedBorrowing['details'] ?? []) }} fasilitas</span>
+                            </div>
+
+                            <div class="overflow-x-auto hide-scrollbar">
+                                <table class="min-w-[1050px] w-full text-left text-[10px]">
+                                    <thead class="bg-white dark:bg-slate-900">
+                                        <tr class="border-b border-slate-100 dark:border-slate-800">
+                                            <th class="px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Tipe</th>
+                                            <th class="px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Kode</th>
+                                            <th class="px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Nama</th>
+                                            <th class="px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Fasilitas</th>
+                                            <th class="px-4 py-3 text-center font-extrabold uppercase tracking-wide text-slate-400">Qty</th>
+                                            <th class="px-4 py-3 text-center font-extrabold uppercase tracking-wide text-slate-400">Status</th>
+                                            <th class="px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Catatan</th>
+                                            <th class="px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Pengembalian</th>
+                                            <th class="px-4 py-3 text-center font-extrabold uppercase tracking-wide text-slate-400">Bukti</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                        @forelse(($selectedBorrowing['details'] ?? []) as $detail)
+                                            <tr class="align-top hover:bg-slate-50/70 dark:hover:bg-slate-800/50">
+                                                <td class="px-4 py-3.5">
+                                                    <span class="inline-flex rounded-md bg-slate-100 px-2 py-1 text-[9px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $detail['type'] }}</span>
+                                                </td>
+                                                <td class="px-4 py-3.5 font-bold text-brand-600 dark:text-brand-400">#{{ $detail['code'] }}</td>
+                                                <td class="px-4 py-3.5">
+                                                    <div class="max-w-[200px] break-words font-bold leading-relaxed text-slate-800 dark:text-white">{{ $detail['name'] }}</div>
+                                                </td>
+                                                <td class="px-4 py-3.5">
+                                                    @if($detail['type'] === 'Ruangan')
+                                                        <div class="flex max-w-[230px] flex-wrap gap-1">
+                                                            @forelse($detail['fasilitas'] ?? [] as $facility)
+                                                                <span class="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-1 text-[8px] font-semibold text-brand-700 dark:bg-brand-500/10 dark:text-brand-300">
+                                                                    <i class="fa-solid {{ $this->facilityIcon($facility) }}"></i>
+                                                                    {{ $facility }}
+                                                                </span>
+                                                            @empty
+                                                                <span class="text-[9px] text-slate-400">Tidak ada</span>
+                                                            @endforelse
+                                                        </div>
+                                                    @else
+                                                        <span class="text-[9px] text-slate-400">-</span>
+                                                    @endif
+                                                </td>
+                                                <td class="px-4 py-3.5 text-center font-extrabold text-slate-800 dark:text-white">{{ $detail['jumlah'] }}</td>
+                                                <td class="px-4 py-3.5 text-center">
+                                                    <span class="inline-flex whitespace-nowrap rounded-full px-2 py-1 text-[8px] font-bold {{ $this->statusClass($detail['status']) }}">{{ $detail['status'] }}</span>
+                                                </td>
+                                                <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300">
+                                                    <div class="max-w-[210px] break-words leading-relaxed">{{ $detail['catatan'] ?: '-' }}</div>
+                                                </td>
+                                                <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300">
+                                                    <div class="max-w-[220px] break-words leading-relaxed">{{ $detail['catatan_pengembalian'] ?: '-' }}</div>
+                                                </td>
+                                                <td class="px-4 py-3.5 text-center">
                                                     @if(!empty($detail['file_bukti_pengembalian']))
-                                                        <a href="{{ \Illuminate\Support\Facades\Storage::url($detail['file_bukti_pengembalian']) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
-                                                            <i class="fa-solid fa-arrow-up-right-from-square"></i>Lihat
+                                                        <a href="{{ \Illuminate\Support\Facades\Storage::url($detail['file_bukti_pengembalian']) }}" target="_blank" rel="noopener" title="Lihat bukti pengembalian" class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-300">
+                                                            <i class="text-[9px] fa-solid fa-arrow-up-right-from-square"></i>
                                                         </a>
                                                     @else
-                                                        <span class="text-xs text-slate-400">Tidak ada</span>
+                                                        <span class="text-slate-400">-</span>
                                                     @endif
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="mt-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-                                            <div class="text-[9px] font-bold uppercase text-slate-400">Catatan</div>
-                                            <div class="mt-1 break-words text-xs leading-relaxed text-slate-600 dark:text-slate-300">{{ $detail['catatan'] ?: 'Tidak ada catatan.' }}</div>
-                                        </div>
-                                        <div class="mt-3 rounded-xl bg-emerald-50 p-3 dark:bg-emerald-900/20">
-                                            <div class="text-[9px] font-bold uppercase text-emerald-600 dark:text-emerald-300">Catatan Pengembalian</div>
-                                            <div class="mt-1 break-words text-xs leading-relaxed text-emerald-800 dark:text-emerald-200">{{ $detail['catatan_pengembalian'] ?: 'Belum ada catatan pengembalian.' }}</div>
-                                        </div>
-                                    </div>
-                                @empty
-                                    <div class="rounded-2xl border border-dashed border-slate-300 p-8 text-center dark:border-slate-700">
-                                        <i class="fa-solid fa-inbox text-2xl text-slate-300 dark:text-slate-600"></i>
-                                        <div class="mt-2 text-xs text-slate-400">Tidak ada rincian fasilitas.</div>
-                                    </div>
-                                @endforelse
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="9" class="p-10 text-center">
+                                                    <div class="flex flex-col items-center">
+                                                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-300 dark:bg-slate-800 dark:text-slate-600">
+                                                            <i class="text-sm fa-solid fa-inbox"></i>
+                                                        </div>
+                                                        <span class="mt-2 text-[10px] font-medium text-slate-400">Tidak ada rincian fasilitas.</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 
+                        <div class="space-y-2 lg:hidden">
+                            @forelse(($selectedBorrowing['details'] ?? []) as $detail)
+                                <div x-data="{ detailOpen: false }" class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-800/60">
+                                    <button type="button" @click="detailOpen = !detailOpen" class="flex w-full items-center gap-3 px-3.5 py-3 text-left">
+                                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                                            <i class="text-xs fa-solid {{ $detail['type'] === 'Ruangan' ? 'fa-door-open' : 'fa-box' }}"></i>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-[8px] font-bold uppercase text-slate-400">{{ $detail['type'] }}</span>
+                                                <span class="text-[9px] font-bold text-brand-600 dark:text-brand-400">#{{ $detail['code'] }}</span>
+                                            </div>
+                                            <div class="mt-0.5 break-words text-[11px] font-extrabold text-slate-800 dark:text-white">{{ $detail['name'] }}</div>
+                                        </div>
+                                        <span class="shrink-0 rounded-full px-2 py-1 text-[8px] font-bold {{ $this->statusClass($detail['status']) }}">{{ $detail['status'] }}</span>
+                                        <i class="text-[9px] fa-solid fa-chevron-down text-slate-400 transition-transform duration-200" :class="{ 'rotate-180': detailOpen }"></i>
+                                    </button>
 
-                        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                            @if(!empty($selectedBorrowing['file_lampiran']))
-                                <a href="{{ \Illuminate\Support\Facades\Storage::url($selectedBorrowing['file_lampiran']) }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-50 px-4 py-2.5 text-xs font-bold text-brand-600 dark:bg-brand-900/20 dark:text-brand-400"><i class="fa-solid fa-paperclip"></i>Lihat Lampiran SP</a>
-                            @endif
-                            @if(!empty($selectedBorrowing['file_bukti_pengembalian']))
-                                <a href="{{ \Illuminate\Support\Facades\Storage::url($selectedBorrowing['file_bukti_pengembalian']) }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"><i class="fa-solid fa-file-arrow-up"></i>Lihat Bukti Pengembalian</a>
-                            @endif
+                                    <div x-show="detailOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-1" class="border-t border-slate-100 dark:border-slate-800">
+                                        <div class="space-y-3 p-3.5">
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900/50">
+                                                    <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">Jumlah</div>
+                                                    <div class="mt-1 text-sm font-extrabold text-slate-800 dark:text-white">{{ $detail['jumlah'] }}</div>
+                                                </div>
+                                                <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900/50">
+                                                    <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">Bukti</div>
+                                                    <div class="mt-1">
+                                                        @if(!empty($detail['file_bukti_pengembalian']))
+                                                            <a href="{{ \Illuminate\Support\Facades\Storage::url($detail['file_bukti_pengembalian']) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[9px] font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
+                                                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                                                Lihat
+                                                            </a>
+                                                        @else
+                                                            <span class="text-[10px] text-slate-400">Tidak ada</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            @if($detail['type'] === 'Ruangan')
+                                                <div class="rounded-xl bg-brand-50/70 p-3 dark:bg-brand-500/5">
+                                                    <div class="mb-2 text-[8px] font-bold uppercase tracking-wide text-brand-600 dark:text-brand-300">Fasilitas yang digunakan</div>
+                                                    <div class="flex flex-wrap gap-1.5">
+                                                        @forelse($detail['fasilitas'] ?? [] as $facility)
+                                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1.5 text-[9px] font-semibold text-brand-700 dark:bg-slate-900 dark:text-brand-300">
+                                                                <i class="text-[8px] fa-solid {{ $this->facilityIcon($facility) }}"></i>
+                                                                {{ $facility }}
+                                                            </span>
+                                                        @empty
+                                                            <span class="text-[9px] text-slate-400">Tidak ada fasilitas.</span>
+                                                        @endforelse
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900/50">
+                                                <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">Catatan</div>
+                                                <div class="mt-1 text-[10px] leading-relaxed text-slate-600 dark:text-slate-300">{{ $detail['catatan'] ?: 'Tidak ada catatan.' }}</div>
+                                            </div>
+
+                                            <div class="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-900/15">
+                                                <div class="text-[8px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">Catatan Pengembalian</div>
+                                                <div class="mt-1 text-[10px] leading-relaxed text-emerald-800 dark:text-emerald-200">{{ $detail['catatan_pengembalian'] ?: 'Belum ada catatan pengembalian.' }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="rounded-2xl border border-dashed border-slate-300 p-8 text-center dark:border-slate-700">
+                                    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-300 dark:bg-slate-800 dark:text-slate-600">
+                                        <i class="text-lg fa-solid fa-inbox"></i>
+                                    </div>
+                                    <div class="mt-2 text-[10px] text-slate-400">Tidak ada rincian fasilitas.</div>
+                                </div>
+                            @endforelse
                         </div>
-                    </div>
-                </div>
+                    </section>
 
-                <div class="shrink-0 border-t border-slate-100 bg-white/95 p-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
-                    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                        <button type="button" wire:click="closeDetail" class="w-full rounded-xl bg-slate-100 px-5 py-3 text-sm font-bold text-slate-700 sm:w-auto dark:bg-slate-800 dark:text-slate-200">Tutup</button>
-                        {{-- @if(($selectedBorrowing['status'] ?? '') === 'Menunggu')
-                            <button type="button" wire:click="openCancel({{ $selectedBorrowing['id'] ?? 0 }})" class="w-full rounded-xl bg-rose-600 px-5 py-3 text-sm font-bold text-white sm:w-auto">Batalkan</button>
-                        @elseif(($selectedBorrowing['status'] ?? '') === 'Disetujui')
-                            <button type="button" wire:click="openReturn({{ $selectedBorrowing['id'] ?? 0 }})" class="w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white sm:w-auto">Pengembalian</button>
-                            <button type="button" wire:click="openPrint({{ $selectedBorrowing['id'] ?? 0 }})" class="w-full rounded-xl bg-brand-600 px-5 py-3 text-sm font-bold text-white sm:w-auto">Cetak</button>
-                        @endif --}}
-                    </div>
+                    @if(!empty($selectedBorrowing['file_lampiran']) || !empty($selectedBorrowing['file_bukti_pengembalian']))
+                        <section>
+                            <div class="mb-3 flex items-center gap-2">
+                                <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                                    <i class="text-[10px] fa-solid fa-paperclip"></i>
+                                </span>
+                                <div>
+                                    <h3 class="text-xs font-extrabold text-slate-800 sm:text-sm dark:text-white">Dokumen Pendukung</h3>
+                                    <p class="text-[9px] text-slate-400">Dokumen yang terkait dengan peminjaman.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                @if(!empty($selectedBorrowing['file_lampiran']))
+                                    <a href="{{ \Illuminate\Support\Facades\Storage::url($selectedBorrowing['file_lampiran']) }}" target="_blank" rel="noopener" class="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 transition hover:border-brand-300 hover:bg-brand-50/40 dark:border-slate-800 dark:bg-slate-800/60 dark:hover:border-brand-500/40">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                                            <i class="text-xs fa-solid fa-paperclip"></i>
+                                        </span>
+                                        <span class="min-w-0 flex-1">
+                                            <span class="block text-[10px] font-bold text-slate-700 dark:text-slate-200">Lampiran SP</span>
+                                            <span class="block mt-0.5 text-[9px] text-slate-400">Buka dokumen</span>
+                                        </span>
+                                        <i class="text-[9px] fa-solid fa-arrow-up-right-from-square text-slate-400 group-hover:text-brand-500"></i>
+                                    </a>
+                                @endif
+
+                                @if(!empty($selectedBorrowing['file_bukti_pengembalian']))
+                                    <a href="{{ \Illuminate\Support\Facades\Storage::url($selectedBorrowing['file_bukti_pengembalian']) }}" target="_blank" rel="noopener" class="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 transition hover:border-emerald-300 hover:bg-emerald-50/40 dark:border-slate-800 dark:bg-slate-800/60 dark:hover:border-emerald-500/40">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                            <i class="text-xs fa-solid fa-file-arrow-up"></i>
+                                        </span>
+                                        <span class="min-w-0 flex-1">
+                                            <span class="block text-[10px] font-bold text-slate-700 dark:text-slate-200">Bukti Pengembalian</span>
+                                            <span class="block mt-0.5 text-[9px] text-slate-400">Buka dokumen</span>
+                                        </span>
+                                        <i class="text-[9px] fa-solid fa-arrow-up-right-from-square text-slate-400 group-hover:text-emerald-500"></i>
+                                    </a>
+                                @endif
+                            </div>
+                        </section>
+                    @endif
+                </div>
+            </div>
+
+            <div class="shrink-0 border-t border-slate-200/80 bg-white/95 px-4 py-3.5 backdrop-blur sm:px-6 dark:border-slate-800 dark:bg-slate-900/95">
+                <div class="flex justify-end">
+                    <button type="button" wire:click="closeDetail" class="inline-flex h-10 w-full items-center justify-center rounded-xl bg-slate-100 px-5 text-xs font-bold text-slate-700 transition hover:bg-slate-200 sm:w-auto dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                        Tutup
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
     </template>
+
 
     {{-- MODAL BATAL --}}
     <template x-teleport="body">
@@ -782,112 +1229,497 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
 
     {{-- MODAL PENGEMBALIAN --}}
     <template x-teleport="body">
-        <div x-data="{ open: @entangle('isReturnModalOpen') }" x-show="open" x-cloak class="fixed inset-0 z-[140] flex items-center justify-center p-3 sm:p-5">
+        <div x-data="{ open: @entangle('isReturnModalOpen') }" x-show="open" x-cloak class="fixed inset-0 z-[140] flex items-center justify-center p-2 sm:p-4">
             <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"></div>
-            <div x-show="open" x-transition class="relative hide-scrollbar flex w-full max-w-4xl max-h-[94vh] flex-col overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
-                <div class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white/95 px-4 py-4 backdrop-blur sm:px-6 dark:border-slate-800 dark:bg-slate-900/95"><div class="min-w-0"><h3 class="text-base font-bold text-slate-900 sm:text-lg dark:text-white">Pengembalian Peminjaman</h3><p class="truncate text-[10px] font-bold text-brand-600 dark:text-brand-400">{{ $selectedBorrowing['kode_transaksi'] ?? '-' }}</p></div><button type="button" wire:click="closeReturn" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:text-rose-500 dark:bg-slate-800"><i class="fa-solid fa-xmark"></i></button></div>
+            <div x-show="open" x-transition class="relative flex w-full max-w-4xl max-h-[96vh] flex-col overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
+                <div class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white/95 px-4 py-4 backdrop-blur sm:px-6 dark:border-slate-800 dark:bg-slate-900/95">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                            <i class="text-sm fa-solid fa-arrow-rotate-left"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-extrabold text-slate-900 sm:text-lg dark:text-white">Pengembalian Peminjaman</h3>
+                            <p class="mt-0.5 truncate text-[9px] font-semibold text-brand-600 sm:text-[10px] dark:text-brand-400">{{ $selectedBorrowing['kode_transaksi'] ?? '-' }}</p>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="closeReturn" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-rose-50 hover:text-rose-500 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-rose-500/10">
+                        <i class="text-xs fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            <form wire:submit="submitReturn" class="min-h-0 flex-1 overflow-y-auto hide-scrollbar">
+                <div class="space-y-5 p-4 sm:p-6">
+                    <div class="rounded-2xl border border-brand-100 bg-brand-50/60 p-4 dark:border-brand-500/20 dark:bg-brand-500/5">
+                        <div class="flex items-start gap-3">
+                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-brand-600 shadow-sm dark:bg-slate-800 dark:text-brand-400">
+                                <i class="text-xs fa-solid fa-circle-info"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-extrabold text-brand-800 sm:text-xs dark:text-brand-300">Proses Pengembalian</p>
+                                <p class="mt-0.5 text-[9px] leading-relaxed text-brand-700/80 sm:text-[10px] dark:text-brand-300/50">Pastikan setiap fasilitas dikembalikan sesuai kondisi dan lengkapi bukti serta catatan bila diperlukan.</p>
+                            </div>
+                        </div>
+                    </div>
 
-                <form wire:submit="submitReturn" class="min-h-0 flex-1 overflow-y-auto history-scrollbar-hidden">
-                    <div class="space-y-5 p-4 sm:p-6">
+                    <div>
+                        <div class="mb-3 flex items-end justify-between gap-3">
+                            <div>
+                                <h4 class="text-xs font-extrabold text-slate-800 sm:text-sm dark:text-white">Fasilitas yang Dikembalikan</h4>
+                                <p class="mt-0.5 text-[9px] sm:text-[10px] text-slate-400">Lengkapi data pengembalian untuk setiap item.</p>
+                            </div>
+                            <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ count($returnDetails) }} item</span>
+                        </div>
+
                         <div class="space-y-3 md:hidden">
                             @forelse($returnDetails as $index => $detail)
-                                <div wire:key="return-mobile-{{ $detail['id'] }}" class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-                                    <div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="rounded-md bg-slate-100 px-2 py-1 text-[9px] font-bold uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ $detail['type'] }}</span><span class="text-[10px] font-semibold text-brand-600 dark:text-brand-400">#{{ $detail['code'] }}</span></div><div class="mt-1.5 text-sm font-bold break-words text-slate-900 dark:text-white">{{ $detail['name'] }}</div></div><span class="shrink-0 rounded-full px-2 py-1 text-[9px] font-bold {{ $this->statusClass($detail['status']) }}">{{ $detail['status'] }}</span></div>
-                                    <div class="mt-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800"><div class="text-[9px] font-bold uppercase text-slate-400">Jumlah</div><div class="mt-1 text-sm font-bold text-slate-900 dark:text-white">{{ $detail['jumlah'] }}</div></div>
-                                    <div class="mt-3"><label class="mb-1.5 block text-[10px] font-bold uppercase text-slate-400">Bukti Pengembalian</label><input type="file" wire:model="returnUploads.{{ $index }}" data-compress-return accept="application/pdf,image/*" capture="environment" class="block w-full text-xs text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-xs file:font-bold file:text-indigo-700 dark:file:bg-indigo-900/30 dark:file:text-indigo-300"><div wire:loading wire:target="returnUploads.{{ $index }}" class="mt-1 text-[10px] font-semibold text-indigo-600"><i class="mr-1 fa-solid fa-spinner animate-spin"></i>Memproses file...</div>@if(!empty($returnUploads[$index]))<div class="mt-1 break-all text-[10px] text-emerald-600 dark:text-emerald-300"><i class="mr-1 fa-solid fa-circle-check"></i>{{ $returnUploads[$index]->getClientOriginalName() }}</div>@endif @error('returnUploads.'.$index)<span class="block mt-1 text-[10px] text-rose-500">{{ $message }}</span>@enderror</div>
-                                    <div class="mt-3"><label class="mb-1.5 block text-[10px] font-bold uppercase text-slate-400">Catatan Pengembalian</label><input type="text" wire:model="returnNotes.{{ $index }}" placeholder="Catatan item..." class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white">@error('returnNotes.'.$index)<span class="block mt-1 text-[10px] text-rose-500">{{ $message }}</span>@enderror</div>
+                                <div wire:key="return-mobile-{{ $detail['id'] }}" class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-800/60">
+                                    <div class="p-3.5">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div class="flex min-w-0 flex-1 items-start gap-2.5">
+                                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                                                    <i class="text-xs fa-solid {{ $detail['type'] === 'Ruangan' ? 'fa-door-open' : 'fa-box' }}"></i>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <div class="flex flex-wrap items-center gap-1.5">
+                                                        <span class="rounded-md bg-slate-100 px-2 py-1 text-[8px] font-bold uppercase text-slate-500 dark:bg-slate-700 dark:text-slate-400">{{ $detail['type'] }}</span>
+                                                        <span class="text-[9px] font-bold text-brand-600 dark:text-brand-400">#{{ $detail['code'] }}</span>
+                                                    </div>
+                                                    <div class="mt-1 break-words text-xs font-extrabold text-slate-800 dark:text-white">{{ $detail['name'] }}</div>
+                                                </div>
+                                            </div>
+                                            <span class="shrink-0 rounded-full px-2 py-1 text-[8px] font-bold {{ $this->statusClass($detail['status']) }}">{{ $detail['status'] }}</span>
+                                        </div>
+
+                                        @if($detail['type'] === 'Ruangan')
+                                            <div class="mt-3 rounded-xl bg-emerald-50/70 p-3 dark:bg-emerald-900/10">
+                                                <div class="mb-2 text-[8px] font-extrabold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">Fasilitas yang digunakan</div>
+                                                <div class="flex flex-wrap gap-1.5">
+                                                    @forelse($detail['fasilitas'] ?? [] as $facility)
+                                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1.5 text-[9px] font-semibold text-emerald-700 dark:bg-slate-900 dark:text-emerald-300">
+                                                            <i class="text-[8px] fa-solid {{ $this->facilityIcon($facility) }}"></i>
+                                                            {{ $facility }}
+                                                        </span>
+                                                    @empty
+                                                        <span class="text-[9px] text-slate-400">Tidak ada fasilitas yang digunakan.</span>
+                                                    @endforelse
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        <div class="mt-3 grid grid-cols-2 gap-2">
+                                            <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900/50">
+                                                <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">Jumlah</div>
+                                                <div class="mt-1 text-sm font-extrabold text-slate-800 dark:text-white">{{ $detail['jumlah'] }}</div>
+                                            </div>
+
+                                            <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900/50">
+                                                <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">Status</div>
+                                                <div class="mt-1">
+                                                    <span class="inline-flex rounded-full px-2 py-1 text-[8px] font-bold {{ $this->statusClass($detail['status']) }}">{{ $detail['status'] }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-3">
+                                            <label class="mb-1.5 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400">Bukti Pengembalian</label>
+                                            <input type="file" wire:model="returnUploads.{{ $index }}" data-compress-return accept="application/pdf,image/*" capture="environment" class="block w-full text-[10px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-[10px] file:font-bold file:text-brand-700 dark:file:bg-brand-900/30 dark:file:text-brand-300">
+                                            <p class="mt-1.5 flex items-start gap-1.5 text-[9px] leading-relaxed text-slate-400">
+                                                <i class="mt-0.5 fa-solid fa-circle-info text-brand-500"></i>
+                                                Foto dokumentasi kondisi barang/ruangan saat dikembalikan.
+                                            </p>
+
+                                            <div wire:loading wire:target="returnUploads.{{ $index }}" class="mt-1.5 text-[9px] font-semibold text-brand-600 dark:text-brand-400">
+                                                <i class="mr-1 fa-solid fa-spinner animate-spin"></i>
+                                                Memproses file...
+                                            </div>
+
+                                            @if(!empty($returnUploads[$index]))
+                                                <div class="mt-1.5 flex items-start gap-1.5 break-all text-[9px] font-semibold text-emerald-600 dark:text-emerald-300">
+                                                    <i class="mt-0.5 fa-solid fa-circle-check"></i>
+                                                    <span>{{ $returnUploads[$index]->getClientOriginalName() }}</span>
+                                                </div>
+                                            @endif
+
+                                            @error('returnUploads.'.$index)
+                                                <span class="mt-1 block text-[9px] font-semibold text-rose-500">{{ $message }}</span>
+                                            @enderror
+                                        </div>
+
+                                        <div class="mt-3">
+                                            <label class="mb-1.5 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400">Catatan Pengembalian</label>
+                                            <input type="text" wire:model="returnNotes.{{ $index }}" placeholder="Tuliskan kondisi atau catatan..." class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[10px] outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white">
+                                            @error('returnNotes.'.$index)
+                                                <span class="mt-1 block text-[9px] font-semibold text-rose-500">{{ $message }}</span>
+                                            @enderror
+                                        </div>
+                                    </div>
                                 </div>
                             @empty
-                                <div class="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-xs text-slate-400 dark:border-slate-700">Tidak ada item yang berstatus Disetujui.</div>
+                                <div class="rounded-2xl border border-dashed border-slate-300 p-8 text-center dark:border-slate-700">
+                                    <div class="flex h-10 w-10 items-center justify-center mx-auto rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+                                        <i class="text-sm fa-solid fa-inbox"></i>
+                                    </div>
+                                    <p class="mt-2 text-[10px] font-medium text-slate-400">Tidak ada item yang berstatus Disetujui.</p>
+                                </div>
                             @endforelse
                         </div>
 
                         <div class="hidden overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 md:block">
+                            <div class="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-800/70">
+                                <div class="flex items-center gap-2 text-[9px] font-semibold text-slate-400">
+                                    <i class="fa-solid fa-arrows-left-right"></i>
+                                    Geser untuk melihat seluruh kolom
+                                </div>
+                                <span class="text-[9px] text-slate-400">{{ count($returnDetails) }} item</span>
+                            </div>
+
                             <div class="overflow-x-auto hide-scrollbar">
-                                <table class="w-full min-w-[900px] text-xs text-left">
-                                    <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="p-3">Tipe</th><th class="p-3">Kode</th><th class="p-3">Nama</th><th class="p-3 text-center">Jumlah</th><th class="p-3">Bukti Pengembalian</th><th class="p-3">Catatan Pengembalian</th></tr></thead>
+                                <table class="w-full min-w-[950px] text-left text-[10px]">
+                                    <thead class="bg-white dark:bg-slate-900">
+                                        <tr class="border-b border-slate-100 dark:border-slate-800">
+                                            <th class="px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Tipe</th>
+                                            <th class="px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Kode</th>
+                                            <th class="px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Nama</th>
+                                            <th class="px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Fasilitas</th>
+                                            <th class="px-4 py-3 text-center font-extrabold uppercase tracking-wide text-slate-400">Jumlah</th>
+                                            <th class="min-w-[290px] px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Bukti Pengembalian</th>
+                                            <th class="min-w-[260px] px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Catatan</th>
+                                        </tr>
+                                    </thead>
+
                                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                                         @forelse($returnDetails as $index => $detail)
-                                            <tr wire:key="return-desktop-{{ $detail['id'] }}" class="align-top"><td class="p-3">{{ $detail['type'] }}</td><td class="p-3">#{{ $detail['code'] }}</td><td class="p-3 font-semibold">{{ $detail['name'] }}</td><td class="p-3 text-center">{{ $detail['jumlah'] }}</td><td class="p-3 min-w-[280px]"><input type="file" wire:model="returnUploads.{{ $index }}" data-compress-return accept="application/pdf,image/*" class="block w-full text-xs text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-xs file:font-bold file:text-indigo-700 dark:file:bg-indigo-900/30 dark:file:text-indigo-300"><div wire:loading wire:target="returnUploads.{{ $index }}" class="mt-1 text-[10px] font-semibold text-indigo-600"><i class="mr-1 fa-solid fa-spinner animate-spin"></i>Memproses file...</div>@if(!empty($returnUploads[$index]))<div class="mt-1 break-all text-[10px] text-emerald-600 dark:text-emerald-300">{{ $returnUploads[$index]->getClientOriginalName() }}</div>@endif @error('returnUploads.'.$index)<span class="block mt-1 text-[10px] text-rose-500">{{ $message }}</span>@enderror</td><td class="p-3 min-w-[260px]"><input type="text" wire:model="returnNotes.{{ $index }}" placeholder="Catatan item..." class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white">@error('returnNotes.'.$index)<span class="block mt-1 text-[10px] text-rose-500">{{ $message }}</span>@enderror</td></tr>
+                                            <tr wire:key="return-desktop-{{ $detail['id'] }}" class="align-top hover:bg-slate-50/70 dark:hover:bg-slate-800/50">
+                                                <td class="px-4 py-4">
+                                                    <span class="inline-flex rounded-md bg-slate-100 px-2 py-1 text-[9px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $detail['type'] }}</span>
+                                                </td>
+
+                                                <td class="px-4 py-4 font-bold text-brand-600 dark:text-brand-400">#{{ $detail['code'] }}</td>
+
+                                                <td class="px-4 py-4">
+                                                    <div class="max-w-[190px] break-words font-bold leading-relaxed text-slate-800 dark:text-white">{{ $detail['name'] }}</div>
+                                                </td>
+
+                                                <td class="px-4 py-4">
+                                                    @if($detail['type'] === 'Ruangan')
+                                                        <div class="flex max-w-[230px] flex-wrap gap-1">
+                                                            @forelse($detail['fasilitas'] ?? [] as $facility)
+                                                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[8px] font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
+                                                                    <i class="fa-solid {{ $this->facilityIcon($facility) }}"></i>
+                                                                    {{ $facility }}
+                                                                </span>
+                                                            @empty
+                                                                <span class="text-[9px] text-slate-400">Tidak ada</span>
+                                                            @endforelse
+                                                        </div>
+                                                    @else
+                                                        <span class="text-[9px] text-slate-400">-</span>
+                                                    @endif
+                                                </td>
+
+                                                <td class="px-4 py-4 text-center font-extrabold text-slate-800 dark:text-white">{{ $detail['jumlah'] }}</td>
+
+                                                <td class="px-4 py-4">
+                                                    <input type="file" wire:model="returnUploads.{{ $index }}" data-compress-return accept="application/pdf,image/*" class="block w-full text-[10px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-[10px] file:font-bold file:text-brand-700 dark:file:bg-brand-900/30 dark:file:text-brand-300">
+                                                    <p class="mt-1.5 flex items-start gap-1.5 text-[9px] leading-relaxed text-slate-400">
+                                                        <i class="mt-0.5 fa-solid fa-circle-info text-brand-500"></i>
+                                                        Foto dokumentasi kondisi barang/ruangan saat dikembalikan.
+                                                    </p>
+
+                                                    <div wire:loading wire:target="returnUploads.{{ $index }}" class="mt-1.5 text-[9px] font-semibold text-brand-600 dark:text-brand-400">
+                                                        <i class="mr-1 fa-solid fa-spinner animate-spin"></i>
+                                                        Memproses file...
+                                                    </div>
+
+                                                    @if(!empty($returnUploads[$index]))
+                                                        <div class="mt-1.5 flex items-start gap-1.5 break-all text-[9px] font-semibold text-emerald-600 dark:text-emerald-300">
+                                                            <i class="mt-0.5 fa-solid fa-circle-check"></i>
+                                                            <span>{{ $returnUploads[$index]->getClientOriginalName() }}</span>
+                                                        </div>
+                                                    @endif
+
+                                                    @error('returnUploads.'.$index)
+                                                        <span class="mt-1 block text-[9px] font-semibold text-rose-500">{{ $message }}</span>
+                                                    @enderror
+                                                </td>
+
+                                                <td class="px-4 py-4">
+                                                    <input type="text" wire:model="returnNotes.{{ $index }}" placeholder="Catatan item..." class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[10px] outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                                                    @error('returnNotes.'.$index)
+                                                        <span class="mt-1 block text-[9px] font-semibold text-rose-500">{{ $message }}</span>
+                                                    @enderror
+                                                </td>
+                                            </tr>
                                         @empty
-                                            <tr><td colspan="6" class="p-8 text-center text-slate-400">Tidak ada item yang berstatus Disetujui.</td></tr>
+                                            <tr>
+                                                <td colspan="7" class="p-10 text-center">
+                                                    <div class="flex flex-col items-center">
+                                                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-300 dark:bg-slate-800 dark:text-slate-600">
+                                                            <i class="text-sm fa-solid fa-inbox"></i>
+                                                        </div>
+                                                        <span class="mt-2 text-[10px] font-medium text-slate-400">Tidak ada item yang berstatus Disetujui.</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
                                         @endforelse
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-
-                        <div><label class="mb-2 block text-xs font-bold text-slate-700 dark:text-slate-300">Status Peminjaman</label><select wire:model="returnStatus" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"><option value="Dikembalikan">Dikembalikan</option><option value="Selesai">Selesai</option></select>@error('returnStatus')<span class="mt-1 block text-xs text-rose-500">{{ $message }}</span>@enderror</div>
                     </div>
 
-                    <div class="sticky bottom-0 border-t border-slate-100 bg-white/95 p-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95"><div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" wire:click="closeReturn" class="w-full rounded-xl bg-slate-100 px-5 py-3 text-sm font-bold text-slate-700 sm:w-auto dark:bg-slate-800 dark:text-slate-200">Tutup</button><button type="submit" wire:loading.attr="disabled" wire:target="submitReturn,returnUploads" class="w-full rounded-xl bg-brand-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-60 sm:w-auto"><span wire:loading.remove wire:target="submitReturn">Simpan Pengembalian</span><span wire:loading wire:target="submitReturn"><i class="mr-1 fa-solid fa-spinner animate-spin"></i>Sedang menyimpan data...</span></button></div></div>
-                </form>
-            </div>
+                    <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-800/60">
+                        <label class="mb-2 flex items-center gap-2 text-xs font-extrabold text-slate-700 dark:text-slate-200">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                                <i class="text-[10px] fa-solid fa-flag-checkered"></i>
+                            </span>
+                            Status Peminjaman
+                        </label>
+
+                        <select wire:model="returnStatus" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white">
+                            <option value="Dikembalikan">Dikembalikan</option>
+                            <option value="Selesai">Selesai</option>
+                        </select>
+
+                        @error('returnStatus')
+                            <span class="mt-1 block text-[10px] font-semibold text-rose-500">{{ $message }}</span>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="sticky bottom-0 shrink-0 border-t border-slate-100 bg-white/95 px-4 py-3.5 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:px-6">
+                    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                        <button type="button" wire:click="closeReturn" class="inline-flex h-10 w-full items-center justify-center rounded-xl bg-slate-100 px-5 text-xs font-bold text-slate-700 transition hover:bg-slate-200 sm:w-auto dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                            Tutup
+                        </button>
+                        <button type="submit" wire:loading.attr="disabled" wire:target="submitReturn,returnUploads" class="inline-flex h-10 w-full items-center justify-center rounded-xl bg-brand-600 px-5 text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto">
+                            <span wire:loading.remove wire:target="submitReturn">
+                                <i class="mr-1.5 fa-solid fa-check"></i>
+                                Simpan Pengembalian
+                            </span>
+                            <span wire:loading wire:target="submitReturn">
+                                <i class="mr-1.5 fa-solid fa-spinner animate-spin"></i>
+                                Menyimpan...
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
+    </div>
     </template>
 
     {{-- MODAL PRINT --}}
     <template x-teleport="body">
-        <div x-data="{ open: @entangle('isPrintModalOpen') }" x-show="open" x-cloak class=" hide-scrollbar fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-5">
-            <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"></div>
-            <div x-show="open" x-transition class="hide-scrollbar relative flex w-full max-w-4xl max-h-[94vh] flex-col overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-2xl">
-                <div class="no-print flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
-                    <h3 class="text-base font-bold text-slate-900 sm:text-lg">Preview Dokumen Peminjaman</h3>
+        <div
+            x-data="{ open: @entangle('isPrintModalOpen') }"
+            x-show="open"
+            x-cloak
+            class="print-modal fixed inset-0 z-[150] flex items-center justify-center p-2 sm:p-4"
+        >
+            <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm no-print"></div>
+            <div x-show="open" x-transition class="relative flex w-full max-w-4xl max-h-[96vh] flex-col overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
+                <div class="no-print flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3.5 sm:px-6 dark:border-slate-800 dark:bg-slate-900">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                            <i class="text-sm fa-solid fa-print"></i>
+                        </div>
+
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-extrabold text-slate-900 sm:text-base dark:text-white">
+                                Preview Dokumen Peminjaman
+                            </h3>
+
+                            <p class="mt-0.5 truncate text-[9px] font-semibold text-brand-600 sm:text-[10px] dark:text-brand-400">
+                                {{ $selectedBorrowing['kode_transaksi'] ?? '-' }}
+                            </p>
+                        </div>
+                    </div>
+
                     <div class="flex items-center gap-2">
-                        <button type="button" onclick="window.print()" class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-bold text-white">
+                        <button
+                            type="button"
+                            onclick="printBorrowingDocument()"
+                            class="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-brand-600 px-3.5 text-[10px] font-bold text-white shadow-sm transition hover:bg-brand-700 sm:h-10 sm:px-4 sm:text-xs"
+                        >
                             <i class="fa-solid fa-print"></i>
-                            <span class="hidden sm:inline">Cetak / PDF</span>
+                            <span class="hidden sm:inline">Cetak / Simpan PDF</span>
                             <span class="sm:hidden">Cetak</span>
                         </button>
-                        <button type="button" wire:click="closePrint" class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
-                            <i class="fa-solid fa-xmark"></i>
+
+                        <button
+                            type="button"
+                            wire:click="closePrint"
+                            class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-rose-50 hover:text-rose-500 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-rose-500/10"
+                            aria-label="Tutup"
+                        >
+                            <i class="text-xs fa-solid fa-xmark"></i>
                         </button>
                     </div>
                 </div>
-                <div id="history-print-preview" class="min-h-0 overflow-y-auto history-scrollbar-hidden bg-slate-950 p-4 sm:p-8">
-                    <div id="history-print-card" class="print-shadow w-full max-w-md mx-auto overflow-hidden bg-white shadow-2xl rounded-[2rem] text-slate-900">
-                        <div class="relative px-5 py-6 overflow-hidden text-center bg-gradient-to-br from-brand-600 to-indigo-700 text-white sm:px-6"><div class="absolute w-32 h-32 rounded-full -top-12 -right-12 bg-white/10"></div><div class="relative"><div class="flex items-center justify-center w-14 h-14 mx-auto mb-3 border rounded-2xl bg-white/15 border-white/20"><i class="text-2xl fa-solid fa-id-card"></i></div><div class="text-[10px] font-bold uppercase tracking-[0.3em] text-indigo-100">Kartu Peminjaman</div><div class="mt-2 text-xl font-black tracking-tight break-all sm:text-2xl">{{ $selectedBorrowing['kode_transaksi'] ?? '-' }}</div></div></div>
+
+                <div id="history-print-preview" class="min-h-0 flex-1 overflow-y-auto hide-scrollbar bg-slate-950 p-3 sm:p-6">
+                    <div id="history-print-card" class="mx-auto w-full max-w-md overflow-hidden rounded-[1.75rem] bg-white text-slate-900 shadow-2xl print-shadow">
+
+                        <div class="relative overflow-hidden bg-gradient-to-br from-brand-600 to-indigo-700 px-5 py-6 text-center text-white sm:px-6">
+                            <div class="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-white/10"></div>
+                            <div class="absolute -bottom-16 -left-16 h-32 w-32 rounded-full bg-white/5"></div>
+
+                            <div class="relative">
+                                <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/15">
+                                    <i class="text-2xl fa-solid fa-id-card"></i>
+                                </div>
+
+                                <div class="text-[9px] font-bold uppercase tracking-[0.28em] text-indigo-100">
+                                    Kartu Peminjaman
+                                </div>
+
+                                <div class="mt-2 break-all text-xl font-black tracking-tight sm:text-2xl">
+                                    {{ $selectedBorrowing['kode_transaksi'] ?? '-' }}
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="p-5 sm:p-6">
-                            <div class="grid grid-cols-2 gap-4 text-xs">
-                                <div>
-                                    <div class="text-[9px] font-bold uppercase text-slate-400">Peminjam</div>
-                                    <div class="mt-1 font-bold break-words">{{ $selectedBorrowing['nama'] ?? '-' }}</div>
+                            <div class="grid grid-cols-2 gap-x-4 gap-y-4 text-xs">
+                                <div class="min-w-0">
+                                    <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">Peminjam</div>
+                                    <div class="mt-1 break-words font-bold">{{ $selectedBorrowing['nama'] ?? '-' }}</div>
                                 </div>
-                                <div>
-                                    <div class="text-[9px] font-bold uppercase text-slate-400">No. HP</div>
-                                    <div class="mt-1 font-bold break-words">{{ $selectedBorrowing['no_hp'] ?? '-' }}</div>
+
+                                <div class="min-w-0">
+                                    <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">No. HP</div>
+                                    <div class="mt-1 break-words font-bold">{{ $selectedBorrowing['no_hp'] ?? '-' }}</div>
                                 </div>
-                                <div>
-                                    <div class="text-[9px] font-bold uppercase text-slate-400">Mulai</div>
-                                    <div class="mt-1 font-bold">{{ $selectedBorrowing['tanggal_mulai'] ?? '-' }}</div>
+
+                                <div class="min-w-0">
+                                    <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">Mulai</div>
+                                    <div class="mt-1 break-words font-bold">{{ $selectedBorrowing['tanggal_mulai'] ?? '-' }}</div>
                                 </div>
-                                <div>
-                                    <div class="text-[9px] font-bold uppercase text-slate-400">Selesai</div>
-                                    <div class="mt-1 font-bold">{{ $selectedBorrowing['tanggal_selesai'] ?? '-' }}</div>
+
+                                <div class="min-w-0">
+                                    <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">Selesai</div>
+                                    <div class="mt-1 break-words font-bold">{{ $selectedBorrowing['tanggal_selesai'] ?? '-' }}</div>
                                 </div>
                             </div>
-                            <div class="p-4 mt-5 border border-slate-200 rounded-2xl bg-slate-50">
-                                <div class="text-[9px] font-bold uppercase text-slate-400">Fasilitas</div>
-                                <div class="mt-2 space-y-2 text-xs font-semibold">
-                                    @foreach($selectedBorrowing['details'] ?? [] as $detail)
-                                        <div class="flex items-start justify-between gap-3">
-                                            <span class="break-words">{{ $detail['type'] }} · {{ $detail['name'] }}</span>
-                                            <span class="shrink-0">×{{ $detail['jumlah'] }}</span>
+
+                            @if(!empty($selectedBorrowing['tujuan']))
+                                <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">Tujuan / Keperluan</div>
+                                    <div class="mt-1.5 break-words text-[10px] font-semibold leading-relaxed text-slate-700 sm:text-xs">
+                                        {{ $selectedBorrowing['tujuan'] }}
+                                    </div>
+                                </div>
+                            @endif
+
+                            <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="text-[8px] font-bold uppercase tracking-wide text-slate-400">
+                                        Fasilitas
+                                    </div>
+
+                                    <div class="text-[8px] font-bold text-slate-400">
+                                        {{ count($selectedBorrowing['details'] ?? []) }} item
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 space-y-3">
+                                    @forelse($selectedBorrowing['details'] ?? [] as $detail)
+                                        <div class="border-b border-slate-200 pb-3 last:border-0 last:pb-0">
+                                            <div class="flex items-start justify-between gap-3">
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="break-words text-[11px] font-extrabold text-slate-800">
+                                                        {{ $detail['name'] }}
+                                                    </div>
+
+                                                    <div class="mt-0.5 text-[8px] font-medium text-slate-400">
+                                                        {{ $detail['type'] }} · #{{ $detail['code'] }}
+                                                    </div>
+                                                </div>
+
+                                                <span class="shrink-0 text-[10px] font-extrabold text-slate-800">
+                                                    ×{{ $detail['jumlah'] }}
+                                                </span>
+                                            </div>
+
+                                            @if($detail['type'] === 'Ruangan')
+                                                <div class="mt-2 flex flex-wrap gap-1.5">
+                                                    @forelse($detail['fasilitas'] ?? [] as $facility)
+                                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[8px] font-semibold text-emerald-700">
+                                                            <i class="fa-solid {{ $this->facilityIcon($facility) }}"></i>
+                                                            {{ $facility }}
+                                                        </span>
+                                                    @empty
+                                                        <span class="text-[8px] text-slate-400">
+                                                            Tidak ada fasilitas.
+                                                        </span>
+                                                    @endforelse
+                                                </div>
+                                            @endif
                                         </div>
-                                    @endforeach
+                                    @empty
+                                        <div class="py-4 text-center text-[9px] text-slate-400">
+                                            Tidak ada rincian fasilitas.
+                                        </div>
+                                    @endforelse
                                 </div>
                             </div>
-                            <div class="flex flex-col items-center gap-4 pt-5 mt-5 border-t border-slate-200 sm:flex-row">
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode($selectedBorrowing['kode_transaksi'] ?? '') }}" alt="QR Code" class="w-28 h-28 p-2 bg-white border rounded-xl border-slate-200 sm:w-32 sm:h-32">
-                                <div class="text-xs text-center text-slate-500 sm:text-left">
-                                    <div class="font-bold text-slate-800">Tunjukkan kartu ini</div>
-                                    <div class="mt-1">QR Code digunakan untuk verifikasi transaksi kepada petugas.</div>
-                                    <div class="inline-flex mt-3 rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-bold text-emerald-700">Status: {{ $selectedBorrowing['status'] ?? '-' }}</div>
+
+                            <div class="mt-5 border-t border-slate-200 pt-5">
+                                <div class="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
+                                    <div class="shrink-0 rounded-xl border border-slate-200 bg-white p-2">
+                                        <img
+                                            src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode($selectedBorrowing['kode_transaksi'] ?? '') }}"
+                                            alt="QR Code {{ $selectedBorrowing['kode_transaksi'] ?? '' }}"
+                                            class="h-28 w-28 sm:h-32 sm:w-32"
+                                        >
+                                    </div>
+
+                                    <div class="min-w-0 text-center sm:text-left">
+                                        <div class="text-[10px] font-extrabold text-slate-800 sm:text-xs">
+                                            Tunjukkan kartu ini
+                                        </div>
+
+                                        <div class="mt-1 text-[9px] leading-relaxed text-slate-500 sm:text-[10px]">
+                                            QR Code digunakan untuk verifikasi transaksi kepada petugas.
+                                        </div>
+
+                                        <div class="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[8px] font-bold text-emerald-700">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                            {{ $selectedBorrowing['status'] ?? '-' }}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            @if(!empty($selectedBorrowing['catatan_admin']))<div class="p-3 mt-4 text-[10px] text-amber-800 rounded-xl bg-amber-50"><b>Catatan Admin:</b> {{ $selectedBorrowing['catatan_admin'] }}</div>@endif
-                            @if(!empty($selectedBorrowing['catatan_pengembalian']))<div class="p-3 mt-3 text-[10px] text-emerald-800 rounded-xl bg-emerald-50"><b>Catatan Pengembalian:</b> {{ $selectedBorrowing['catatan_pengembalian'] }}</div>@endif
-                            @if(!empty($selectedBorrowing['file_bukti_pengembalian']))<div class="p-3 mt-3 text-[10px] text-slate-600 rounded-xl bg-slate-50"><b>Bukti Pengembalian:</b> Tersedia</div>@endif
+
+                            @if(!empty($selectedBorrowing['catatan_admin']))
+                                <div class="mt-4 rounded-xl bg-amber-50 p-3 text-[9px] leading-relaxed text-amber-800">
+                                    <span class="font-bold">Catatan Admin:</span>
+                                    {{ $selectedBorrowing['catatan_admin'] }}
+                                </div>
+                            @endif
+
+                            @if(!empty($selectedBorrowing['catatan_pengembalian']))
+                                <div class="mt-3 rounded-xl bg-emerald-50 p-3 text-[9px] leading-relaxed text-emerald-800">
+                                    <span class="font-bold">Catatan Pengembalian:</span>
+                                    {{ $selectedBorrowing['catatan_pengembalian'] }}
+                                </div>
+                            @endif
+
+                            @if(!empty($selectedBorrowing['file_bukti_pengembalian']))
+                                <div class="mt-3 rounded-xl bg-slate-50 p-3 text-[9px] text-slate-600">
+                                    <span class="font-bold">Bukti Pengembalian:</span>
+                                    Tersedia
+                                </div>
+                            @endif
+
+                            <div class="mt-5 border-t border-slate-200 pt-4 text-center">
+                                <div class="text-[8px] font-medium text-slate-400">
+                                    Dokumen ini dibuat secara elektronik.
+                                </div>
+                                <div class="mt-0.5 text-[8px] text-slate-400">
+                                    Kode transaksi: {{ $selectedBorrowing['kode_transaksi'] ?? '-' }}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -925,6 +1757,17 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
                 console.warn('Kompresi gambar gagal.', e);
             }
         });
+
+        
+        function printBorrowingDocument() {
+            document.body.classList.add('printing-borrowing');
+
+            window.print();
+
+            setTimeout(() => {
+                document.body.classList.remove('printing-borrowing');
+            }, 500);
+        }
     </script>
 </div>
 

@@ -10,13 +10,13 @@
         name="viewport"
         content="width=device-width, initial-scale=1"
     >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta
         name="csrf-token"
         content="{{ csrf_token() }}" wire:navigate 
     >
     {{-- icon --}}
-    <link rel="icon" href="{{ asset('logosmansa.ico') }}" type="image/x-icon">
+    <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
 
     <title>
         {{ $title ?? 'SARPRAS SMANSA' }} |
@@ -64,7 +64,7 @@
         
          html {
             /* indigo-600 == #E11D48 */
-            --livewire-progress-bar-color: #432dd7 !important;
+            --livewire-progress-bar-color: #387dee !important;
             z-index: 9999 !important;
         }
 
@@ -157,7 +157,7 @@
 
         /* Item Saat Di-hover / Dipilih */
         .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
-            background-color: #4f46e5 !important; /* bg-indigo-600 */
+            background-color: #387dee !important; /* bg-indigo-600 */
             color: white !important;
         }
         /* salte slate-800 sama dengan #1f2937 */

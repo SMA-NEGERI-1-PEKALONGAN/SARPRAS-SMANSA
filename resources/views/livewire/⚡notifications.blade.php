@@ -61,10 +61,10 @@ new class extends Component
         <button
             type="button"
             @click="open = !open"
-            class="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+            class="relative flex items-center justify-center {{ auth()->user()->role == 'admin' ? 'w-10 h-10 text-gray-500 transition-all duration-300 rounded-xl hover:bg-gray-100 active:scale-90 dark:text-gray-400 dark:hover:bg-gray-900' : 'h-10 w-10 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800' }}"
             aria-label="Notifikasi"
         >
-            <i class="text-[15px] fa-regular fa-bell"></i>
+            <i class="{{ auth()->user()->role == 'admin' ? 'text-[15px] fa-regular fa-bell' : 'text-[15px] transition-transform duration-300 group-hover:rotate-12 fa-solid fa-bell' }}"></i>
 
             @if($this->unreadCount > 0)
                 <span class="absolute -right-0.5 -top-0.5 flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[8px] font-bold text-white ring-2 ring-white dark:ring-slate-950">
@@ -159,12 +159,12 @@ new class extends Component
         @if($this->notifications->count())
             <div class="border-t border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
                 <a
-                    href="{{ route('history') }}"
+                    @if(auth()->user()->role === 'admin') href="{{ route('admin.booking') }}" @else href="{{ route('history') }}" @endif
                     wire:navigate
                     @click="open = false"
                     class="flex items-center justify-center gap-2 text-[10px] font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
                 >
-                    Lihat Riwayat Peminjaman
+                    Lihat semua data
                     <i class="fa-solid fa-arrow-right"></i>
                 </a>
             </div>

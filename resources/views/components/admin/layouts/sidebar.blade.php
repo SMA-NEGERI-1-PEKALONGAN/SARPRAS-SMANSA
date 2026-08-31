@@ -277,7 +277,7 @@
                     <p class="text-xs font-bold text-gray-900 truncate dark:text-white">
                         {{ auth()->user()->name ?? 'User' }}
                     </p>
-                    <p class="text-[10px] text-gray-400 truncate">{{ auth()->user()->role ?? 'Admin' }}</p>
+                    <p class="text-[10px] text-gray-400 truncate">{{ auth()->user()->role ?? 'admin' }}</p>
                 </div>
             </div>
         </div>
