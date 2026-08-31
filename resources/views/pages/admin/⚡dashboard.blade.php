@@ -194,12 +194,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Admin')] class extends Component
     {{-- Header --}}
     <div class="flex flex-col gap-3 mb-6 sm:flex-row sm:items-end sm:justify-between sm:mb-8">
         <div>
-            <div class="flex items-center gap-2 mb-2">
-                <span class="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">
-                    <i class="fa-solid fa-chart-line"></i>
-                    Admin Overview
-                </span>
-            </div>
+            
             <h1 class="text-2xl font-bold tracking-tight sm:text-3xl text-slate-900 dark:text-white">
                 Dashboard Admin
             </h1>

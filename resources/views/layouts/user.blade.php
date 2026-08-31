@@ -15,6 +15,8 @@
         name="csrf-token"
         content="{{ csrf_token() }}" wire:navigate 
     >
+    {{-- icon --}}
+    <link rel="icon" href="{{ asset('logosmansa.ico') }}" type="image/x-icon">
 
     <title>
         {{ $title ?? 'SARPRAS SMANSA' }} |
@@ -165,6 +167,72 @@
         .dark .select2-dropdown { background-color: #1f2937 !important; border-color: #374151 !important; }
         .dark .select2-search--dropdown .select2-search__field { background-color: #111827 !important; border-color: #374151 !important; color: white !important; }
         .dark .select2-results__option { color: #d1d5db !important; }
+
+         /* Global Select Style */
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            width: 100%;
+            padding: 0.625rem 2.5rem 0.625rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #1d293d;
+            background-color: rgba(249, 250, 251, 0.8);
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            outline: none;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+
+            /* Custom SVG Arrow Icon */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%239ca3af'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.25rem;
+        }
+
+        select:hover {
+            border-color: #d1d5db;
+            background-color: #ffffff;
+        }
+
+        select:focus {
+            border-color: #387dee;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        }
+
+        select option {
+            background-color: #ffffff;
+            color: #1f2937;
+        }
+
+        /* Dark Mode Support (.dark class pada tag <html> atau <body>) */
+        .dark select {
+            color: #e5e7eb;
+            background-color: rgba(31, 41, 55, 0.8);
+            border-color: #1d293d;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236b7280'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+        }
+
+        .dark select:hover {
+            border-color: #4b5563;
+            background-color: #1f2937;
+        }
+
+        .dark select:focus {
+            border-color: #387dee;
+            background-color: #1f2937;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25);
+        }
+
+        .dark select option {
+            background-color: #1f2937;
+            color: #f3f4f6;
+        }
+
+        
     </style>
     {{-- ===================================================== --}}
     {{-- Theme Initializer --}}

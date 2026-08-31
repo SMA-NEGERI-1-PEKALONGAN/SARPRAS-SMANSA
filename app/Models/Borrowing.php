@@ -21,6 +21,7 @@ class Borrowing extends Model
         'file_lampiran',
         'status',
         'catatan_admin',
+        'tanda_tangan',
     ];
 
     protected $casts = [

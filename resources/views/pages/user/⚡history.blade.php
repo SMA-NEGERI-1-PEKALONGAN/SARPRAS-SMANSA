@@ -7,6 +7,8 @@ use Livewire\WithPagination;
 use Livewire\WithFileUploads;
 use App\Models\Borrowing;
 use App\Models\BorrowingDetail;
+use App\Models\User;
+use App\Models\SystemNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
@@ -81,6 +83,61 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
         ];
     }
 
+    protected function sendCancellationNotification(Borrowing $borrowing): void
+    {
+        $userName = auth()->user()?->name ?? 'User';
+
+        $resourceNames = $borrowing->details
+            ->map(fn ($detail) => $detail->room?->nama_ruangan ?? $detail->item?->nama_barang)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $resourceName = $resourceNames->isNotEmpty()
+            ? $resourceNames->implode(', ')
+            : 'fasilitas';
+
+        $admins = User::query()
+            ->where(function ($query) {
+                $query->where('role', 'admin');
+            })
+            ->get(['id']);
+
+        foreach ($admins as $admin) {
+            SystemNotification::create([
+                'user_id' => $admin->id,
+                'title' => 'Peminjaman Dibatalkan',
+                'message' => "{$userName} membatalkan pengajuan peminjaman {$resourceName}. Transaksi {$borrowing->kode_transaksi} telah dibatalkan.",
+                'url' => route('admin.booking'),
+                'is_read' => false,
+            ]);
+        }
+    }
+
+    protected function sendReturnNotification(Borrowing $borrowing): void
+    {
+        if (!$borrowing->approved_by) {
+            return;
+        }
+
+        $resourceNames = $borrowing->details
+            ->map(fn ($detail) => $detail->room?->nama_ruangan ?? $detail->item?->nama_barang)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $resourceName = $resourceNames->isNotEmpty()
+            ? $resourceNames->implode(', ')
+            : 'fasilitas';
+
+        SystemNotification::create([
+            'user_id' => $borrowing->approved_by,
+            'title' => 'Pengembalian Peminjaman',
+            'message' => "Pengembalian {$resourceName} oleh " . (auth()->user()?->name ?? 'User') . " telah diajukan untuk transaksi {$borrowing->kode_transaksi}. Silakan periksa pengembalian tersebut.",
+            'url' => route('admin.booking'),
+            'is_read' => false,
+        ]);
+    }
     public function openDetail(int $id): void
     {
         $this->loadBorrowing($id);
@@ -120,29 +177,41 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
 
         try {
             DB::transaction(function () use ($borrowing) {
-                $userName = auth()->user()->name ?? 'User';
-                $note = 'Dilakukan pembatalan oleh ' . $userName . ' pada ' . now()->format('d-m-Y H:i:s');
+            $userName = auth()->user()->name ?? 'User';
+            $note = 'Dilakukan pembatalan oleh ' . $userName . ' pada ' . now()->format('d-m-Y H:i:s');
 
-                $borrowing->status = 'Ditolak';
-                if (Schema::hasColumn('borrowings', 'catatan')) {
-                    $borrowing->catatan = $note;
-                } elseif (Schema::hasColumn('borrowings', 'catatan_admin')) {
-                    $borrowing->catatan_admin = $note;
+            $borrowing->status = 'Ditolak';
+
+            if (Schema::hasColumn('borrowings', 'catatan')) {
+                $borrowing->catatan = $note;
+            } elseif (Schema::hasColumn('borrowings', 'catatan_admin')) {
+                $borrowing->catatan_admin = $note;
+            }
+
+            $borrowing->save();
+
+            foreach ($borrowing->details as $detail) {
+                $detail->status = 'Ditolak';
+
+                if (Schema::hasColumn('borrowing_details', 'catatan')) {
+                    $detail->catatan = $note;
                 }
-                $borrowing->save();
 
-                foreach ($borrowing->details as $detail) {
-                    $detail->status = 'Ditolak';
-                    if (Schema::hasColumn('borrowing_details', 'catatan')) {
-                        $detail->catatan = $note;
-                    }
-                    $detail->save();
-                }
-            });
+                $detail->save();
+            }
+        });
 
-            $code = $borrowing->kode_transaksi;
-            $this->closeCancel();
-            $this->dispatch('toast', type: 'success', message: "Pengajuan {$code} berhasil dibatalkan.");
+        $this->sendCancellationNotification($borrowing);
+
+        $code = $borrowing->kode_transaksi;
+
+        $this->closeCancel();
+
+        $this->dispatch(
+            'toast',
+            type: 'success',
+            message: "Pengajuan {$code} berhasil dibatalkan."
+        );
         } catch (\Throwable $e) {
             report($e);
             $this->addError('cancel', 'Pengajuan gagal dibatalkan. Silakan coba lagi.');
@@ -218,60 +287,93 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
 
         try {
             DB::transaction(function () use ($borrowing) {
-                $details = $borrowing->details->keyBy('id');
-                $savedAny = false;
+            $details = $borrowing->details->keyBy('id');
+            $savedAny = false;
 
-                foreach ($this->returnDetails as $index => $row) {
-                    $detail = $details->get((int) $row['id']);
-                    if (!$detail || $detail->status !== 'Disetujui') {
-                        continue;
-                    }
+            foreach ($this->returnDetails as $index => $row) {
+                $detail = $details->get((int) $row['id']);
 
-                    $upload = $this->returnUploads[$index] ?? null;
-                    if ($upload) {
-                        $path = $upload->store('bukti-pengembalian', 'public');
-                        if (Schema::hasColumn('borrowing_details', 'bukti_pengembalian')) {
-                            $detail->bukti_pengembalian = $path;
-                        } elseif (Schema::hasColumn('borrowing_details', 'file_bukti_pengembalian')) {
-                            $detail->file_bukti_pengembalian = $path;
-                        }
-                    }
-
-                    $note = $this->returnNotes[$index] ?? '';
-                    if (Schema::hasColumn('borrowing_details', 'catatan_pengembalian')) {
-                        $detail->catatan_pengembalian = $note ?: null;
-                    }
-
-                    $detail->status = 'Dikembalikan';
-                    $detail->save();
-                    $savedAny = true;
+                if (!$detail || $detail->status !== 'Disetujui') {
+                    continue;
                 }
 
-                $borrowing->refresh()->load('details');
-                $approvedLeft = $borrowing->details->contains(fn ($d) => $d->status === 'Disetujui');
-                $borrowing->status = $approvedLeft ? 'Disetujui' : $this->returnStatus;
+                $upload = $this->returnUploads[$index] ?? null;
 
-                if (Schema::hasColumn('borrowings', 'catatan_pengembalian')) {
-                    $notes = collect($this->returnNotes)->filter()->values()->implode(' | ');
-                    if ($notes !== '') {
-                        $borrowing->catatan_pengembalian = $notes;
+                if ($upload) {
+                    $path = $upload->store('bukti-pengembalian', 'public');
+
+                    if (Schema::hasColumn('borrowing_details', 'bukti_pengembalian')) {
+                        $detail->bukti_pengembalian = $path;
+                    } elseif (Schema::hasColumn('borrowing_details', 'file_bukti_pengembalian')) {
+                        $detail->file_bukti_pengembalian = $path;
                     }
                 }
-                if (Schema::hasColumn('borrowings', 'file_bukti_pengembalian')) {
-                    $firstUpload = collect($this->returnUploads)->filter()->first();
-                    if ($firstUpload) {
-                        $borrowing->file_bukti_pengembalian = $firstUpload->store('bukti-pengembalian', 'public');
-                    }
-                }
-                $borrowing->save();
 
-                if (!$savedAny) {
-                    throw new \RuntimeException('Tidak ada item yang dapat dikembalikan.');
-                }
-            });
+                $note = $this->returnNotes[$index] ?? '';
 
-            $this->closeReturn();
-            $this->dispatch('toast', type: 'success', message: 'Pengembalian per item berhasil disimpan.');
+                if (Schema::hasColumn('borrowing_details', 'catatan_pengembalian')) {
+                    $detail->catatan_pengembalian = $note ?: null;
+                }
+
+                $detail->status = 'Dikembalikan';
+                $detail->save();
+
+                $savedAny = true;
+            }
+
+            $borrowing->refresh()->load('details');
+
+            $approvedLeft = $borrowing->details->contains(
+                fn ($d) => $d->status === 'Disetujui'
+            );
+
+            $borrowing->status = $approvedLeft
+                ? 'Disetujui'
+                : $this->returnStatus;
+
+            if (Schema::hasColumn('borrowings', 'catatan_pengembalian')) {
+                $notes = collect($this->returnNotes)
+                    ->filter()
+                    ->values()
+                    ->implode(' | ');
+
+                if ($notes !== '') {
+                    $borrowing->catatan_pengembalian = $notes;
+                }
+            }
+
+            if (Schema::hasColumn('borrowings', 'file_bukti_pengembalian')) {
+                $firstUpload = collect($this->returnUploads)
+                    ->filter()
+                    ->first();
+
+                if ($firstUpload) {
+                    $borrowing->file_bukti_pengembalian =
+                        $firstUpload->store(
+                            'bukti-pengembalian',
+                            'public'
+                        );
+                }
+            }
+
+            $borrowing->save();
+
+            if (!$savedAny) {
+                throw new \RuntimeException(
+                    'Tidak ada item yang dapat dikembalikan.'
+                );
+            }
+        });
+
+        $this->sendReturnNotification($borrowing);
+
+        $this->closeReturn();
+        $this->dispatch('toast', type: 'success', message: 'Pengembalian per item berhasil disimpan.');
+        $this->dispatch(
+            'toast',
+            type: 'success',
+            message: 'Pengembalian per item berhasil disimpan.'
+        );
         } catch (\Throwable $e) {
             report($e);
             $this->addError('returnStatus', 'Pengembalian gagal disimpan. Silakan periksa data dan coba lagi.');

@@ -19,10 +19,12 @@ class BorrowingDetail extends Model
         'jumlah',
         'status',
         'file_bukti_pengembalian',
+        'fasilitas',
     ];
 
     protected $casts = [
         'jumlah' => 'integer',
+        'fasilitas' => 'array',
     ];
 
     // Relasi balik ke Header Transaksi

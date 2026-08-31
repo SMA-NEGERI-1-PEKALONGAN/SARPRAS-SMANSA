@@ -55,52 +55,7 @@
             </button>
 
             {{-- NOTIFICATIONS --}}
-            {{-- <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open"
-                    class="relative flex items-center justify-center w-10 h-10 text-gray-500 transition-all rounded-xl hover:bg-gray-100 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-900">
-                    <i class="text-xl ti ti-bell"></i>
-                    @if ($unreadCount > 0)
-                        <span class="absolute right-2.5 top-2.5 flex h-2 w-2">
-                            <span class="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping bg-rose-400"></span>
-                            <span class="relative inline-flex w-2 h-2 rounded-full bg-rose-500"></span>
-                        </span>
-                    @endif
-                </button>
-
-                <div x-show="open" @click.outside="open = false" 
-                    x-transition:enter="transition ease-out duration-200"
-                    x-transition:enter-start="opacity-0 scale-95 translate-y-2"
-                    x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                    class="absolute right-0 mt-3 w-[22rem] sm:w-[26rem] origin-top-right rounded-3xl border border-gray-100 bg-white shadow-2xl shadow-indigo-100 dark:border-gray-800 dark:bg-gray-950 dark:shadow-none"
-                    x-cloak>
-
-                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-50 dark:border-gray-900">
-                        <h3 class="text-sm font-bold text-gray-400">Notifikasi</h3>
-                        <span class="rounded-full bg-indigo-50 px-3 py-1 text-[10px] font-bold text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">{{ $unreadCount }} Baru</span>
-                    </div>
-
-                    <div class="max-h-[400px] overflow-y-auto py-2 custom-scrollbar">
-                        @foreach ($latestNotifications as $notif)
-                            <a href="{{ $notif->data['url'] }}" class="flex items-start gap-4 px-6 py-4 transition-all duration-200 border-b hover:bg-indigo-50/50 dark:hover:bg-indigo-500/5 group border-gray-50/50 dark:border-gray-900/50 last:border-none">
-                                <div class="flex items-center justify-center text-gray-400 transition-colors h-11 w-11 shrink-0 rounded-2xl bg-gray-50 group-hover:bg-white group-hover:text-indigo-600 dark:bg-gray-900 dark:group-hover:bg-gray-800">
-                                    <i class="ti {{ $notif->data['icon'] }} text-xl"></i>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex justify-between items-start mb-0.5">
-                                        <p class="text-sm font-bold text-gray-900 truncate transition-colors dark:text-white group-hover:text-indigo-600">{{ $notif->data['title'] }}</p>
-                                        @if(!$notif->read_at)<span class="h-1.5 w-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(79,70,229,0.6)]"></span>@endif
-                                    </div>
-                                    <p class="text-xs leading-relaxed text-gray-500 dark:text-gray-400 line-clamp-2">{{ $notif->data['message'] }}</p>
-                                    <p class="mt-2 text-[10px] font-bold text-gray-400 ">{{ $notif->created_at->diffForHumans() }}</p>
-                                </div>
-                            </a>
-                        @endforeach
-                    </div>
-                    <div class="p-4 border-t border-gray-50 dark:border-gray-900">
-                        <x-button variant="secondary" class="w-full py-2.5 text-xs font-bold ">Tandai Semua Terbaca</x-button>
-                    </div>
-                </div>
-            </div> --}}
+            <livewire:notifications />
 
             <div class="w-px h-6 mx-1 bg-gray-200 dark:bg-gray-800"></div>
 

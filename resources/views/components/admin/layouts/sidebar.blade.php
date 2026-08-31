@@ -1,5 +1,17 @@
 {{-- Tambahkan @persist di sini untuk menjaga state Alpine.js antar navigasi halaman --}}
 @persist('sidebar')
+@php
+    use App\Models\Borrowing;
+    use Carbon\Carbon;
+
+    $pendingBorrowingCount = Borrowing::query()
+        ->where('status', 'Menunggu')
+        ->whereBetween('tanggal_mulai', [
+            now()->startOfDay(),
+            now()->addWeeks(4)->endOfDay(),
+        ])
+        ->count();
+@endphp
 <aside id="sidebar"
     class="fixed inset-y-0 left-0 z-[999] bg-white/90 backdrop-blur-xl dark:bg-gray-950/90 text-gray-900 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] border-r border-gray-200/50 dark:border-gray-800/50 flex flex-col"
     x-data="{
@@ -114,8 +126,42 @@
                                         
                                         <i class="ti ti-{{ $item['icon'] }} text-xl shrink-0 transition-transform duration-300 group-hover:scale-110"></i>
                                         
-                                        <span x-show="expanded" x-cloak class="ml-3 text-sm font-medium text-left grow">
-                                            {{ $item['name'] }}
+                                        <span
+                                            x-show="expanded"
+                                            x-cloak
+                                            class="z-10 flex items-center ml-3 text-sm font-semibold grow"
+                                        >
+                                            <span>
+                                                {{ $item['name'] }}
+                                            </span>
+
+                                            @if(
+                                                $pendingBorrowingCount > 0 &&
+                                                str_contains(strtolower($item['name']), 'peminjaman')
+                                            )
+                                                <span
+                                                    class="ml-auto min-w-[22px] h-5 px-1.5
+                                                        flex items-center justify-center
+                                                        rounded-full
+                                                        bg-rose-500
+                                                        text-white
+                                                        text-[9px]
+                                                        font-bold
+                                                        shadow-sm
+                                                        animate-pulse"
+                                                    title="{{ $pendingBorrowingCount }} peminjaman belum diproses"
+                                                >
+                                                    {{ $pendingBorrowingCount > 99 ? '99+' : $pendingBorrowingCount }}
+                                                </span>
+                                            @endif
+
+                                            @if(!empty($item['new']))
+                                                <span
+                                                    class="ml-2 bg-rose-500 text-[9px] text-white px-1.5 py-0.5 rounded-md font-bold animate-pulse"
+                                                >
+                                                    New
+                                                </span>
+                                            @endif
                                         </span>
 
                                         <i x-show="expanded" x-cloak
@@ -160,10 +206,41 @@
                                         
                                         <i class="ti ti-{{ $item['icon'] }} text-xl shrink-0 z-10 transition-transform duration-300 group-hover:scale-110"></i>
                                         
-                                        <span x-show="expanded" x-cloak class="z-10 flex items-center ml-3 text-sm font-semibold grow">
-                                            {{ $item['name'] }}
+                                        <span
+                                            x-show="expanded"
+                                            x-cloak
+                                            class="z-10 flex items-center ml-3 text-sm font-semibold grow"
+                                        >
+                                            <span>
+                                                {{ $item['name'] }}
+                                            </span>
+
+                                            @if(
+                                                $pendingBorrowingCount > 0 &&
+                                                str_contains(strtolower($item['name']), 'peminjaman')
+                                            )
+                                                <span
+                                                    class="ml-auto min-w-[22px] h-5 px-1.5
+                                                        flex items-center justify-center
+                                                        rounded-full
+                                                        bg-rose-500
+                                                        text-white
+                                                        text-[9px]
+                                                        font-bold
+                                                        shadow-sm
+                                                        animate-pulse"
+                                                    title="{{ $pendingBorrowingCount }} peminjaman belum diproses"
+                                                >
+                                                    {{ $pendingBorrowingCount > 99 ? '99+' : $pendingBorrowingCount }}
+                                                </span>
+                                            @endif
+
                                             @if(!empty($item['new']))
-                                                <span class="ml-auto bg-rose-500 text-[9px] text-white px-1.5 py-0.5 rounded-md font-bold animate-pulse">New</span>
+                                                <span
+                                                    class="ml-2 bg-rose-500 text-[9px] text-white px-1.5 py-0.5 rounded-md font-bold animate-pulse"
+                                                >
+                                                    New
+                                                </span>
                                             @endif
                                         </span>
                                     </a>

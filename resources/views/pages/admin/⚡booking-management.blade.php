@@ -10,6 +10,7 @@ use App\Models\Item;
 use App\Models\User;
 use App\Models\Borrowing;
 use App\Models\BorrowingDetail;
+use App\Models\SystemNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -66,7 +67,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
     public function mount(): void
     {
         $this->dateFrom = now()->format('Y-m-d');
-        $this->dateTo = now()->endOfMonth()->format('Y-m-d');
+        $this->dateTo = now()->addWeek(4)->format('Y-m-d');
     }
 
     public function updatingSearch(): void { $this->resetPage(); }
@@ -87,6 +88,55 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
         return [$from, $to];
     }
 
+    protected function sendStatusNotification(Borrowing $borrowing, string $oldStatus, string $newStatus): void
+    {
+        if ($oldStatus === $newStatus || !in_array($newStatus, ['Disetujui', 'Ditolak', 'Selesai'], true)) {
+            return;
+        }
+
+        $borrowing->loadMissing(['user', 'details.room', 'details.item']);
+
+        $resourceNames = $borrowing->details
+            ->map(fn ($detail) => $detail->room?->nama_ruangan ?? $detail->item?->nama_barang)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $resourceName = $resourceNames->count() > 0
+            ? $resourceNames->implode(', ')
+            : 'fasilitas';
+
+        $url = route('history');
+
+        $notification = match ($newStatus) {
+            'Disetujui' => [
+                'title' => 'Pengajuan Disetujui',
+                'message' => "Pengajuan Disetujui - Peminjaman {$resourceName} Anda siap digunakan.",
+            ],
+            'Ditolak' => [
+                'title' => 'Pengajuan Ditolak',
+                'message' => "Pengajuan Ditolak - {$resourceName} batal dipinjam. Catatan: " . ($borrowing->catatan_admin ?: '-'),
+            ],
+            'Selesai' => [
+                'title' => 'Peminjaman Selesai',
+                'message' => "Peminjaman Selesai - Terima kasih telah mengembalikan {$resourceName}.",
+            ],
+            default => null,
+        };
+
+        if (!$notification || !$borrowing->user_id) {
+            return;
+        }
+
+        SystemNotification::create([
+            'user_id' => $borrowing->user_id,
+            'title' => $notification['title'],
+            'message' => $notification['message'],
+            'url' => $url,
+            'is_read' => false,
+        ]);
+    }
+
     protected function activeStatuses(): array
     {
         return ['Menunggu', 'Disetujui', 'Dipinjam'];
@@ -102,7 +152,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
     }
     
 
-    public function updatedApprovalStatus(string $value): void
+    public function updatedApprovalStatus(string $value): void // fungsi ini dijalankan ketika approvalStatus diubah
     {
         $allowed = $this->approvalStatusOptions();
         if (!in_array($value, $allowed, true)) {
@@ -113,6 +163,10 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
             $original = $detail['status_original'] ?? $detail['status'];
 
             if ($this->approvalCurrentStatus === 'Menunggu' && $original === 'Menunggu') {
+                // jika statsu utama setuju dan status detail ditolak tidak akan mengubah detail
+                if ($value === 'Disetujui' && $detail['status'] === 'Ditolak') {
+                    return;
+                }
                 $this->approvalDetails[$index]['status'] = $value;
             } elseif ($this->approvalCurrentStatus === 'Disetujui' && $original === 'Disetujui' && $value === 'Dikembalikan') {
                 $this->approvalDetails[$index]['status'] = 'Dikembalikan';
@@ -376,9 +430,11 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
             'catatan_admin' => ['nullable', 'string', 'max:2000'],
             'approvalDetails.*.jumlah' => ['required', 'integer', 'min:1'],
             'approvalDetails.*.status' => ['required', 'string'],
-        ],);
+        ]);
 
         $borrowing = Borrowing::with('details')->findOrFail($this->approvalBorrowingId);
+
+        $oldStatus = (string) $borrowing->status;
 
         try {
             DB::transaction(function () use ($borrowing) {
@@ -386,6 +442,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
 
                 foreach ($this->approvalDetails as $payload) {
                     $detail = $detailsById->get((int) ($payload['id'] ?? 0));
+
                     if (!$detail) {
                         continue;
                     }
@@ -397,6 +454,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                         if (!in_array($requested, ['Menunggu', 'Disetujui', 'Ditolak'], true)) {
                             throw new \RuntimeException('Status detail tidak valid.');
                         }
+
                         if ($current !== 'Menunggu') {
                             $requested = $current;
                         }
@@ -412,19 +470,28 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                         $requested = $current;
                     }
 
-                    $update = ['status' => $requested];
+                    $update = [
+                        'status' => $requested,
+                    ];
 
                     if ($detail->item_id !== null) {
-                        $update['jumlah'] = max(1, (int) ($payload['jumlah'] ?? $detail->jumlah));
+                        $update['jumlah'] = max(
+                            1,
+                            (int) ($payload['jumlah'] ?? $detail->jumlah)
+                        );
                     }
 
                     $detail->update($update);
                 }
 
                 $borrowing->refresh()->load('details');
+
                 $this->syncBorrowingStatus($borrowing);
 
-                if (Schema::hasColumn('borrowings', 'approved_by') && $this->approvalCurrentStatus === 'Menunggu') {
+                if (
+                    Schema::hasColumn('borrowings', 'approved_by') &&
+                    $this->approvalCurrentStatus === 'Menunggu'
+                ) {
                     $borrowing->approved_by = auth()->id();
                 }
 
@@ -432,19 +499,42 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                     $borrowing->catatan_admin = $this->catatan_admin ?: null;
                 }
 
-
                 $borrowing->save();
             });
 
-            $code = $this->approvalTransactionCode;
-            $status = Borrowing::find($this->approvalBorrowingId)?->status ?? '-';
+            $borrowing->refresh()->load([
+                'user',
+                'details.room',
+                'details.item',
+            ]);
+
+            $newStatus = (string) $borrowing->status;
+
+            $this->sendStatusNotification(
+                $borrowing,
+                $oldStatus,
+                $newStatus
+            );
+
+            $code = $borrowing->kode_transaksi;
 
             $this->closeApprovalModal();
-            $this->dispatch('toast', type: 'success', message: "Data {$code} berhasil disimpan. Status transaksi: {$status}.");
+
+            $this->dispatch(
+                'toast',
+                type: 'success',
+                message: "Data {$code} berhasil disimpan. Status transaksi: {$newStatus}."
+            );
+
             $this->refreshOpenDetail();
+
         } catch (\Throwable $e) {
             report($e);
-            $this->addError('approvalStatus', 'Terjadi kesalahan saat menyimpan data. Silakan periksa isian dan coba lagi.');
+
+            $this->addError(
+                'approvalStatus',
+                'Terjadi kesalahan saat menyimpan data. Silakan periksa isian dan coba lagi.'
+            );
         }
     }
 

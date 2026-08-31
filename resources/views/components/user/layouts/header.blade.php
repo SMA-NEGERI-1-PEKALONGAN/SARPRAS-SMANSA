@@ -147,13 +147,7 @@
                         class="text-[11px] transition-transform duration-200 group-hover:translate-x-0.5 fa-solid fa-arrow-right"></i>
                 </a>
                 @else
-                <button type="button"
-                    class="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-                    aria-label="Notifikasi">
-                    <i class="text-[15px] fa-regular fa-bell"></i>
-                    <span
-                        class="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-950"></span>
-                </button>
+                <livewire:notifications />
 
                 <div class="mx-1 h-7 w-px bg-slate-200 dark:bg-slate-800"></div>
 
@@ -218,13 +212,7 @@
                     <i class="text-[15px] fa-solid" :class="$store.theme.isDark ? 'fa-sun' : 'fa-moon'"></i>
                 </button>
                 @auth
-                <button type="button"
-                    class="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                    aria-label="Notifikasi">
-                    <i class="text-[15px] fa-regular fa-bell"></i>
-                    <span
-                        class="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-950"></span>
-                </button>
+                <livewire:notifications />
                 @endauth
                 <button type="button" @click="mobileMenuOpen = !mobileMenuOpen"
                     :class="mobileMenuOpen ? 'text-slate-700 dark:text-white' : 'text-slate-700 dark:text-white'"

@@ -17,6 +17,8 @@ Volt::route('/', 'pages::user.home')->name('home');
 // Home dengan URL /home
 Volt::route('/home', 'pages::user.home');
 
+// Booking
+Volt::route('/booking', 'pages::user.booking')->name('booking');
 
 /*
 |--------------------------------------------------------------------------
@@ -55,7 +57,7 @@ Route::middleware('auth')->get('/logout', function () {
 
 Route::middleware(['auth', 'role:siswa,guru/staff,admin'])->group(function () {
 
-    Volt::route('/booking', 'pages::user.booking')->name('booking');
+    // Volt::route('/booking', 'pages::user.booking')->name('booking');
 
     Volt::route('/history', 'pages::user.history')->name('history');
 
