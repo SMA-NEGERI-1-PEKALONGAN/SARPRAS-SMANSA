@@ -20,7 +20,7 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
     public string $type = 'ruangan';
     public string $dateFilter;
     public string $search = '';
-    public string $category = 'all';
+    public string $filterTipe = 'all';
 
     public bool $isBookingModalOpen = false;
     public bool $isAlertModalOpen = false;
@@ -48,19 +48,36 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
         'items' => [],
     ];
 
+    public array $roomTypes = [
+        'Laboratorium',
+        'Aula',
+        'Ruang Rapat',
+        'Fasilitas Olahraga',
+        'Lainnya',
+    ];
+
     public function mount(): void
     {
         $this->dateFilter = now()->format('Y-m-d');
     }
 
-    public function updatingSearch(): void { $this->resetPage(); }
-    public function updatingCategory(): void { $this->resetPage(); }
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFilterTipe(): void
+    {
+        $this->resetPage();
+    }
+
     public function updatingType(): void
     {
-        $this->category = 'all';
+        $this->filterTipe = 'all';
         $this->search = '';
         $this->resetPage();
     }
+
     public function updatingDateFilter(): void
     {
         $this->resetPage();
@@ -116,6 +133,7 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
             'rooms' => [],
             'items' => [],
         ];
+
         $this->file_lampiran = null;
         $this->selectedItem = [];
         $this->additionalResourceType = 'ruangan';
@@ -271,7 +289,8 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
         try {
             $bookingName = collect($this->form['rooms'])->pluck('nama')
                 ->merge(collect($this->form['items'])->pluck('nama'))
-                ->filter()->implode(', ');
+                ->filter()
+                ->implode(', ');
 
             DB::transaction(function () use ($start, $end, $activeStatuses) {
                 $overlap = function () use ($start, $end, $activeStatuses) {
@@ -284,26 +303,38 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
                 };
 
                 foreach ($this->form['rooms'] as $room) {
-                    $exists = $overlap()->where('room_id', $room['room_id'])->lockForUpdate()->exists();
+                    $exists = $overlap()
+                        ->where('room_id', $room['room_id'])
+                        ->lockForUpdate()
+                        ->exists();
+
                     if ($exists) {
-                        throw new \RuntimeException("Ruangan {$room['nama']} bentrok dengan jadwal peminjaman lain pada waktu tersebut.");
+                        throw new \RuntimeException(
+                            "Ruangan {$room['nama']} bentrok dengan jadwal peminjaman lain pada waktu tersebut."
+                        );
                     }
                 }
 
                 foreach ($this->form['items'] as $item) {
                     $stock = (int) Item::whereKey($item['item_id'])->value('jumlah_total');
-                    $used = (int) $overlap()->where('item_id', $item['item_id'])->lockForUpdate()->sum('jumlah');
+                    $used = (int) $overlap()
+                        ->where('item_id', $item['item_id'])
+                        ->lockForUpdate()
+                        ->sum('jumlah');
+
                     $requested = (int) $item['jumlah'];
                     $available = max(0, $stock - $used);
 
                     if ($requested > $available) {
-                        throw new \RuntimeException("Stok {$item['nama']} tidak mencukupi. Tersedia {$available} unit pada waktu tersebut.");
+                        throw new \RuntimeException(
+                            "Stok {$item['nama']} tidak mencukupi. Tersedia {$available} unit pada waktu tersebut."
+                        );
                     }
                 }
 
                 $kode = $this->generateTransactionCode();
 
-                $data = [
+                $borrowing = Borrowing::create([
                     'kode_transaksi' => $kode,
                     'user_id' => auth()->id(),
                     'approved_by' => null,
@@ -311,9 +342,7 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
                     'tanggal_mulai' => $start,
                     'tanggal_selesai' => $end,
                     'status' => 'Menunggu',
-                ];
-
-                $borrowing = Borrowing::create($data);
+                ]);
 
                 foreach ($this->form['rooms'] as $room) {
                     BorrowingDetail::create([
@@ -335,7 +364,6 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
                     ]);
                 }
 
-                // Lampiran bersifat opsional. Simpan hanya jika field DB tersedia.
                 if ($this->file_lampiran && Schema::hasColumn('borrowings', 'file_lampiran')) {
                     $path = $this->file_lampiran->store('lampiran-peminjaman', 'public');
                     $borrowing->file_lampiran = $path;
@@ -349,9 +377,11 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
             $this->dispatch('toast', type: 'success', message: 'Peminjaman berhasil diajukan dan menunggu persetujuan.');
         } catch (\Throwable $e) {
             report($e);
+
             $this->errorMessage = $e instanceof \RuntimeException
                 ? $e->getMessage()
                 : 'Terjadi kesalahan saat menyimpan pengajuan. Silakan coba kembali.';
+
             $this->isErrorAlertOpen = true;
             $this->addError('booking', $this->errorMessage);
         }
@@ -382,15 +412,15 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
         return [
             'id' => (int) $room->id,
             'tipe' => 'ruangan',
-            'kategori' => $room->getAttribute('kategori') ?? 'ruangan',
-            'kategori_label' => $room->getAttribute('kategori_label') ?? $room->getAttribute('kategori') ?? 'Ruangan',
+            'kategori' => $room->getAttribute('tipe') ?: 'Lainnya',
+            'kategori_label' => $room->getAttribute('tipe') ?: 'Lainnya',
             'nama' => $room->nama_ruangan,
             'kode' => $room->kode_ruangan,
-            'deskripsi' => $room->getAttribute('deskripsi') ?? 'Fasilitas ruangan yang tersedia untuk peminjaman.',
+            'deskripsi' => $room->getAttribute('deskripsi') ?: 'Fasilitas ruangan yang tersedia untuk peminjaman.',
             'kapasitas' => (int) ($room->kapasitas ?? 0),
             'satuan' => 'Orang',
             'icon' => $room->icon ?: 'fa-solid fa-door-closed',
-            'fasilitas' => $this->parseFacilities($room->getAttribute('fasilitas') ?? $room->getAttribute('facility')),
+            'fasilitas' => $this->parseFacilities($room->getAttribute('fasilitas') ?? ''),
             'can_borrow' => (bool) $room->status_tersedia,
         ];
     }
@@ -434,7 +464,7 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
             str_contains($facility, 'sound') || str_contains($facility, 'speaker') || str_contains($facility, 'audio') => 'fa-volume-high',
             str_contains($facility, 'komputer') || str_contains($facility, 'pc') || str_contains($facility, 'laptop') => 'fa-computer',
             str_contains($facility, 'kabel') || str_contains($facility, 'listrik') || str_contains($facility, 'plug') => 'fa-plug',
-            str_contains($facility, 'Headset') || str_contains($facility, 'headset') || str_contains($facility, 'earphone') => 'fa-headset',
+            str_contains($facility, 'headset') || str_contains($facility, 'earphone') => 'fa-headset',
             str_contains($facility, 'kamera') || str_contains($facility, 'camera') || str_contains($facility, 'video') => 'fa-camera',
             str_contains($facility, 'meja') => 'fa-table',
             str_contains($facility, 'kursi') => 'fa-chair',
@@ -456,22 +486,31 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
             });
 
         if ($this->selectedResourceId !== null && $this->selectedResourceType !== null) {
-            $query->where($this->selectedResourceType === 'ruangan' ? 'room_id' : 'item_id', $this->selectedResourceId);
+            $query->where(
+                $this->selectedResourceType === 'ruangan'
+                    ? 'room_id'
+                    : 'item_id',
+                $this->selectedResourceId
+            );
         }
 
-        $this->activeBorrowings = $query->orderBy('id')->get()->map(function (BorrowingDetail $detail) {
-            return [
-                'id' => $detail->id,
-                'kode_transaksi' => $detail->borrowing?->kode_transaksi ?? '-',
-                'peminjam' => $detail->borrowing?->user?->name ?? '-',
-                'tujuan' => $detail->borrowing?->tujuan ?? '-',
-                'item' => $detail->room?->nama_ruangan ?? $detail->item?->nama_barang ?? '-',
-                'tanggal_mulai' => optional($detail->borrowing?->tanggal_mulai)->format('d M Y H:i'),
-                'tanggal_selesai' => optional($detail->borrowing?->tanggal_selesai)->format('d M Y H:i'),
-                'jumlah' => $detail->jumlah,
-                'status' => $detail->status,
-            ];
-        })->toArray();
+        $this->activeBorrowings = $query
+            ->orderBy('id')
+            ->get()
+            ->map(function (BorrowingDetail $detail) {
+                return [
+                    'id' => $detail->id,
+                    'kode_transaksi' => $detail->borrowing?->kode_transaksi ?? '-',
+                    'peminjam' => $detail->borrowing?->user?->name ?? '-',
+                    'tujuan' => $detail->borrowing?->tujuan ?? '-',
+                    'item' => $detail->room?->nama_ruangan ?? $detail->item?->nama_barang ?? '-',
+                    'tanggal_mulai' => optional($detail->borrowing?->tanggal_mulai)->format('d M Y H:i'),
+                    'tanggal_selesai' => optional($detail->borrowing?->tanggal_selesai)->format('d M Y H:i'),
+                    'jumlah' => $detail->jumlah,
+                    'status' => $detail->status,
+                ];
+            })
+            ->toArray();
     }
 
     public function closeAlertModal(): void
@@ -486,41 +525,64 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
 
     public function with(): array
     {
-        $baseQuery = $this->type === 'ruangan' ? Room::query() : Item::query();
+        $isRoom = $this->type === 'ruangan';
+        $baseQuery = $isRoom ? Room::query() : Item::query();
 
-        if ($this->search) {
-            $baseQuery->where(function ($q) {
-                if ($this->type === 'ruangan') {
-                    $q->where('nama_ruangan', 'like', "%{$this->search}%")
-                        ->orWhere('kode_ruangan', 'like', "%{$this->search}%");
+        if (trim($this->search) !== '') {
+            $search = trim($this->search);
+
+            $baseQuery->where(function ($q) use ($search, $isRoom) {
+                if ($isRoom) {
+                    $q->where('nama_ruangan', 'like', "%{$search}%")
+                        ->orWhere('kode_ruangan', 'like', "%{$search}%");
                 } else {
-                    $q->where('nama_barang', 'like', "%{$this->search}%")
-                        ->orWhere('kode_barang', 'like', "%{$this->search}%");
+                    $q->where('nama_barang', 'like', "%{$search}%")
+                        ->orWhere('kode_barang', 'like', "%{$search}%");
                 }
             });
         }
 
-        if ($this->category !== 'all' && Schema::hasColumn($this->type === 'ruangan' ? 'rooms' : 'items', 'kategori')) {
-            $baseQuery->where('kategori', $this->category);
+        if (
+            $isRoom &&
+            $this->filterTipe !== 'all' &&
+            Schema::hasColumn('rooms', 'tipe')
+        ) {
+            $baseQuery->where('tipe', $this->filterTipe);
         }
 
-        $categoryColumn = $this->type === 'ruangan' ? 'kategori' : 'kategori';
-        $hasCategoryColumn = Schema::hasColumn($this->type === 'ruangan' ? 'rooms' : 'items', $categoryColumn);
+        if (
+            !$isRoom &&
+            $this->filterTipe !== 'all' &&
+            Schema::hasColumn('items', 'kategori')
+        ) {
+            $baseQuery->where('kategori', $this->filterTipe);
+        }
 
-        $categories = $hasCategoryColumn
-            ? (clone $baseQuery)->whereNotNull($categoryColumn)->distinct()->orderBy($categoryColumn)->pluck($categoryColumn)
-            : collect();
+        $categories = $isRoom
+            ? collect($this->roomTypes)
+            : (
+                Schema::hasColumn('items', 'kategori')
+                    ? Item::query()
+                        ->whereNotNull('kategori')
+                        ->where('kategori', '!=', '')
+                        ->distinct()
+                        ->orderBy('kategori')
+                        ->pluck('kategori')
+                    : collect()
+            );
 
         $resources = $baseQuery
-            ->orderBy($this->type === 'ruangan' ? 'nama_ruangan' : 'nama_barang')
+            ->orderBy($isRoom ? 'nama_ruangan' : 'nama_barang')
             ->paginate(8);
 
         $startDate = Carbon::parse($this->dateFilter)->startOfDay();
         $endDate = Carbon::parse($this->dateFilter)->endOfDay();
         $activeStatuses = ['Menunggu', 'Disetujui', 'Dipinjam'];
 
-        $resources->through(function ($resource) use ($startDate, $endDate, $activeStatuses) {
-            $item = $this->type === 'ruangan' ? $this->mapRoom($resource) : $this->mapItem($resource);
+        $resources->through(function ($resource) use ($startDate, $endDate, $activeStatuses, $isRoom) {
+            $item = $isRoom
+                ? $this->mapRoom($resource)
+                : $this->mapItem($resource);
 
             $detailQuery = BorrowingDetail::query()
                 ->whereHas('borrowing', function ($q) use ($startDate, $endDate, $activeStatuses) {
@@ -529,12 +591,18 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
                         ->where('tanggal_selesai', '>', $startDate);
                 });
 
-            if ($this->type === 'ruangan') {
-                $count = (clone $detailQuery)->where('room_id', $resource->id)->count();
+            if ($isRoom) {
+                $count = (clone $detailQuery)
+                    ->where('room_id', $resource->id)
+                    ->count();
+
                 $item['booked_count'] = $count;
                 $item['status_label'] = $count > 0 ? 'Ada Jadwal' : 'Tersedia';
             } else {
-                $used = (int) (clone $detailQuery)->where('item_id', $resource->id)->sum('jumlah');
+                $used = (int) (clone $detailQuery)
+                    ->where('item_id', $resource->id)
+                    ->sum('jumlah');
+
                 $item['booked_count'] = $used;
                 $item['available_qty'] = max(0, $item['kapasitas'] - $used);
                 $item['status_label'] = $item['available_qty'] > 0 ? 'Tersedia' : 'Stok Habis';
@@ -543,8 +611,22 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
             return $item;
         });
 
-        $bookingRoomsList = Room::where('status_tersedia', true)->orderBy('nama_ruangan')->get(['id', 'nama_ruangan', 'kode_ruangan']);
-        $bookingItemsList = Item::where('bisa_dipinjam', true)->orderBy('nama_barang')->get(['id', 'nama_barang', 'kode_barang', 'jumlah_total']);
+        $bookingRoomsList = Room::where('status_tersedia', true)
+            ->orderBy('nama_ruangan')
+            ->get([
+                'id',
+                'nama_ruangan',
+                'kode_ruangan',
+            ]);
+
+        $bookingItemsList = Item::where('bisa_dipinjam', true)
+            ->orderBy('nama_barang')
+            ->get([
+                'id',
+                'nama_barang',
+                'kode_barang',
+                'jumlah_total',
+            ]);
 
         return [
             'resources' => $resources,
@@ -575,7 +657,7 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
 
             <div class="relative w-full sm:w-44">
                 <i class="absolute text-sm -translate-y-1/2 pointer-events-none left-3 top-1/2 fa-regular fa-calendar text-slate-400"></i>
-                <input type="date" wire:model.live="dateFilter" class="w-full py-2.5 pl-9 pr-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm md:w-full">
+                <input type="date" wire:model.live="dateFilter" min="{{ now()->format('Y-m-d') }}" max="{{ now()->addWeek()->format('Y-m-d') }}" class="w-full py-2.5 pl-9 pr-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm md:w-full">
             </div>
 
             <div class="relative flex-1 w-full sm:w-64">
@@ -589,16 +671,35 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
         </div>
     </div>
 
-    @error('booking')
-        <div class="p-3 mb-6 text-sm font-medium text-rose-700 border rounded-xl bg-rose-50 border-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-800">{{ $message }}</div>
+        @error('booking')
+        <div class="p-3 mb-6 text-sm font-medium text-rose-700 border rounded-xl bg-rose-50 border-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-800">
+            {{ $message }}
+        </div>
     @enderror
 
     @if($categories->count())
         <div class="mb-6 overflow-x-auto border-b border-slate-200 dark:border-slate-700/80">
             <ul class="flex gap-6 text-sm font-medium min-w-max">
-                <li><button wire:click="$set('category', 'all')" class="{{ $category === 'all' ? 'pb-4 border-b-2 border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400' : 'pb-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400' }} whitespace-nowrap">Semua</button></li>
+                <li>
+                    <button
+                        type="button"
+                        wire:click="$set('filterTipe', 'all')"
+                        class="whitespace-nowrap pb-4 border-b-2 transition-colors {{ $filterTipe === 'all' ? 'border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200' }}"
+                    >
+                        Semua
+                    </button>
+                </li>
+
                 @foreach($categories as $cat)
-                    <li><button wire:click="$set('category', '{{ $cat }}')" class="{{ $category === $cat ? 'pb-4 border-b-2 border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400' : 'pb-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400' }} whitespace-nowrap">{{ str($cat)->replace('_', ' ')->title() }}</button></li>
+                    <li>
+                        <button
+                            type="button"
+                            wire:click="$set('filterTipe', @js($cat))"
+                            class="whitespace-nowrap pb-4 border-b-2 transition-colors {{ $filterTipe === $cat ? 'border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200' }}"
+                        >
+                            {{ $cat }}
+                        </button>
+                    </li>
                 @endforeach
             </ul>
         </div>
@@ -606,9 +707,13 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
 
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         @forelse($resources as $item)
-            <div wire:key="resource-{{ $item['tipe'] }}-{{ $item['id'] }}" class="flex flex-col overflow-hidden transition-all duration-300 bg-white border border-slate-200 dark:bg-slate-800 rounded-2xl dark:border-slate-700 hover:shadow-xl hover:shadow-brand-500/5">
+            <div
+                wire:key="resource-{{ $item['tipe'] }}-{{ $item['id'] }}"
+                class="flex flex-col overflow-hidden transition-all duration-300 bg-white border border-slate-200 dark:bg-slate-800 rounded-2xl dark:border-slate-700 hover:shadow-xl hover:shadow-brand-500/5"
+            >
                 <div class="relative flex items-center justify-center h-36 overflow-hidden bg-slate-100 dark:bg-slate-700/50">
-                    <i class="text-5xl transition-transform duration-500 fa-solid {{ str_replace('fa-solid ', '', $item['icon']) }} text-slate-300 dark:text-slate-600 group-hover:scale-110"></i>
+                    <i class="text-5xl transition-transform duration-500 fa-solid {{ str_replace('fa-solid ', '', $item['icon']) }} text-slate-300 dark:text-slate-600"></i>
+
                     <div class="absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-bold {{ $item['status_label'] === 'Tersedia' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' }}">
                         {{ $item['status_label'] }}
                     </div>
@@ -616,28 +721,36 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
 
                 <div class="flex flex-col flex-1 p-5">
                     <div class="flex items-center justify-between gap-3 mb-2">
-                        <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">{{ $item['kategori_label'] }}</span>
-                        <span class="text-[10px] font-bold text-brand-600 dark:text-brand-400">#{{ $item['kode'] }}</span>
+                        <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                            {{ $item['kategori_label'] }}
+                        </span>
+
+                        <span class="text-[10px] font-bold text-brand-600 dark:text-brand-400">
+                            #{{ $item['kode'] }}
+                        </span>
                     </div>
-                    <h3 class="mb-3 text-lg font-bold text-slate-900 dark:text-white">{{ $item['nama'] }}</h3>
-                    <p class="mb-4 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{{ $item['deskripsi'] }}</p>
+
+                    <h3 class="mb-3 text-lg font-bold text-slate-900 dark:text-white">
+                        {{ $item['nama'] }}
+                    </h3>
+
+                    <p class="mb-4 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                        {{ $item['deskripsi'] }}
+                    </p>
 
                     <div class="flex items-center gap-2 mb-4 text-xs text-slate-600 dark:text-slate-300">
                         <span class="px-2 py-1 font-medium border rounded-md bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-700 whitespace-nowrap">
-                            <i class="fa-solid {{ $item['tipe'] === 'ruangan' ? 'fa-users' : 'fa-box' }} text-slate-400 mr-1"></i>
+                            <i class="mr-1 fa-solid {{ $item['tipe'] === 'ruangan' ? 'fa-users' : 'fa-box' }} text-slate-400"></i>
                             {{ $item['tipe'] === 'ruangan' ? $item['kapasitas'].' Orang' : $item['kapasitas'].' Unit' }}
                         </span>
                     </div>
 
                     @if($item['tipe'] === 'ruangan')
-                        <div
-                            class="flex gap-2 pb-1 mb-5 overflow-x-auto hide-scrollbar whitespace-nowrap snap-x"
-                            aria-label="Daftar fasilitas ruangan"
-                        >
+                        <div class="flex gap-2 pb-1 mb-5 overflow-x-auto hide-scrollbar whitespace-nowrap snap-x" aria-label="Daftar fasilitas ruangan">
                             @forelse($item['fasilitas'] as $facility)
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded-lg dark:bg-slate-700/70 dark:text-slate-300 dark:border-slate-600 shrink-0">
                                     <i class="fa-solid {{ $this->facilityIcon($facility) }} text-brand-500"></i>
-                                    <span>{{ $facility }}</span>
+                                    {{ $facility }}
                                 </span>
                             @empty
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-medium text-slate-400 bg-slate-50 border border-slate-200 rounded-lg dark:bg-slate-900/40 dark:border-slate-700 shrink-0">
@@ -649,15 +762,31 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
                     @endif
 
                     <div class="grid grid-cols-2 gap-2 mt-auto">
-                        <button wire:click="openInfoModal('{{ $item['tipe'] }}', {{ $item['id'] }})" class="flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">
-                            <i class="fa-solid fa-circle-info"></i> Info
+                        <button
+                            type="button"
+                            wire:click="openInfoModal('{{ $item['tipe'] }}', {{ $item['id'] }})"
+                            class="flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+                        >
+                            <i class="fa-solid fa-circle-info"></i>
+                            Info
                         </button>
+
                         @if($item['can_borrow'])
-                            <button wire:click="requestBooking('{{ $item['tipe'] }}', {{ $item['id'] }})" class="py-2.5 text-xs font-semibold text-white rounded-xl bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-500/20">
+                            <button
+                                type="button"
+                                wire:click="requestBooking('{{ $item['tipe'] }}', {{ $item['id'] }})"
+                                class="py-2.5 text-xs font-semibold text-white rounded-xl bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-500/20"
+                            >
                                 Pinjam
                             </button>
                         @else
-                            <button disabled class="py-2.5 text-xs font-semibold rounded-xl text-slate-400 bg-slate-100 dark:bg-slate-700 cursor-not-allowed">Tidak Tersedia</button>
+                            <button
+                                type="button"
+                                disabled
+                                class="py-2.5 text-xs font-semibold rounded-xl text-slate-400 bg-slate-100 dark:bg-slate-700 cursor-not-allowed"
+                            >
+                                Tidak Tersedia
+                            </button>
                         @endif
                     </div>
                 </div>
@@ -665,7 +794,9 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
         @empty
             <div class="col-span-full py-16 text-center bg-white border border-slate-200 shadow-sm rounded-2xl dark:bg-slate-800 dark:border-slate-700">
                 <i class="mb-3 text-4xl text-slate-300 fa-solid fa-box-open dark:text-slate-600"></i>
-                <p class="text-sm font-semibold text-slate-400">Data tidak ditemukan.</p>
+                <p class="text-sm font-semibold text-slate-400">
+                    Data tidak ditemukan.
+                </p>
             </div>
         @endforelse
     </div>
