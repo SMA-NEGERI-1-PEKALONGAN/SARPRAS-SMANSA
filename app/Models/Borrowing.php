@@ -20,6 +20,7 @@ class Borrowing extends Model
         'tanggal_selesai',
         'file_lampiran',
         'status',
+        'catatan',
         'catatan_admin',
         'tanda_tangan',
     ];

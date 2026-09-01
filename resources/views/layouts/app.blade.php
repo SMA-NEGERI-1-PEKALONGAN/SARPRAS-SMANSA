@@ -197,7 +197,7 @@
 
         .dark select:hover {
             border-color: #4b5563;
-            background-color: #1f2937;
+            background-color: #4b5563;
         }
 
         .dark select:focus {

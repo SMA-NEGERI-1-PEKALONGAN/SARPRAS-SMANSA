@@ -860,8 +860,8 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
                                 <h2 class="text-sm font-extrabold text-slate-900 sm:text-base dark:text-white">Detail Peminjaman</h2>
-                                <p class="mt-0.5 truncate text-[9px] font-semibold text-brand-600 sm:text-[10px] dark:text-brand-400">{{ $selectedBorrowing['kode_transaksi'] ?? '-' }}</p>
                             </div>
+                            <p class="mt-0.5 truncate text-[9px] font-semibold text-brand-600 sm:text-[10px] dark:text-brand-400">{{ $selectedBorrowing['kode_transaksi'] ?? '-' }}</p>
                         </div>
                     </div>
                     <button type="button" wire:click="closeDetail" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-rose-50 hover:text-rose-500 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-400" aria-label="Tutup modal">

@@ -164,7 +164,7 @@ new class extends Component
                     @click="open = false"
                     class="flex items-center justify-center gap-2 text-[10px] font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
                 >
-                    Lihat semua data
+                    Lihat semua peminjaman
                     <i class="fa-solid fa-arrow-right"></i>
                 </a>
             </div>

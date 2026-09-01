@@ -9,6 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('borrowings', function (Blueprint $table) {
+            $table->text('catatan')->nullable()->after('status');
             $table->longText('tanda_tangan')->nullable()->after('catatan_admin');
         });
 
@@ -20,6 +21,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('borrowings', function (Blueprint $table) {
+            $table->dropColumn('catatan');
             $table->dropColumn('tanda_tangan');
         });
 
