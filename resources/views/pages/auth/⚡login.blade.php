@@ -71,8 +71,8 @@ new #[Layout('layouts::auth')] class extends Component
                     <div class="absolute bottom-0 left-0 w-64 h-64 -mb-32 -ml-32 rounded-full bg-indigo-400/20 blur-3xl"></div>
 
                     <div class="relative z-10 flex items-center gap-3">
-                        <div class="flex items-center justify-center w-10 h-10 text-indigo-600 bg-white shadow-lg rounded-xl">
-                            <i class="text-xs fa-solid fa-school"></i>
+                        <div class="flex items-center justify-center w-15 h-15 bg-transparent  rounded-xl">
+                            <img src="{{ asset('img/logosmansa.png') }}" alt="Logo SMAN 1 Pekalongan">
                         </div>
                         <span class="text-xl font-bold tracking-tight text-white">SMAN 1 Pekalongan</span>
                     </div>

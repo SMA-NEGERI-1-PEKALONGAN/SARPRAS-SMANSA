@@ -327,8 +327,8 @@
             </main>
 
             <footer class="p-6 text-xs font-medium text-center text-gray-400">
-                <p>&copy; {{ date('Y') }}, Built with ❤️ by <a href="#" class="font-bold hover:text-indigo-600">SARPRAS
-                        Team</a></p>
+                <p>&copy; {{ date('Y') }}, Built with ❤️ by <a href="#" class="font-bold hover:text-indigo-600">
+                        TIM IT SMANSA</a></p>
             </footer>
         </div>
     </div>

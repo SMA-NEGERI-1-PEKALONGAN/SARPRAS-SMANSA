@@ -56,9 +56,15 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
     ];
 
     public array $roomTypes = [
+        'Kelas',
         'Laboratorium',
+        'Multimedia',
         'Aula',
-        'Ruang Rapat',
+        'UKS',
+        'Perpustakaan',
+        'Ruang Khusus',
+        'Ruang Server',
+        'Ruang Podcast',
         'Fasilitas Olahraga',
         'Lainnya',
     ];

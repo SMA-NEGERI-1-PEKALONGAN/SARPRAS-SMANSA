@@ -12,7 +12,19 @@ return new class extends Migration
             $table->id();
             $table->string('kode_ruangan')->unique(); // Contoh: LAB-KOM-1, AULA-01
             $table->string('nama_ruangan'); // Contoh: Lab Komputer 1
-            $table->enum('tipe', ['Laboratorium', 'Aula', 'Ruang Rapat', 'Fasilitas Olahraga', 'Lainnya']);
+            $table->enum('tipe', [
+                                    'Kelas',
+                                    'Laboratorium',
+                                    'Multimedia',
+                                    'Aula',
+                                    'UKS',
+                                    'Perpustakaan',
+                                    'Ruang Khusus',
+                                    'Ruang Server',
+                                    'Ruang Podcast',
+                                    'Fasilitas Olahraga',
+                                    'Lainnya',
+                                ])->default('Lainnya');
             $table->integer('kapasitas')->nullable(); // Jumlah maksimal orang
             $table->text('fasilitas')->nullable(); // Bisa diisi: "AC, Proyektor, 40 PC"
             $table->boolean('status_tersedia')->default(true); // true = bisa dipinjam, false = sedang rusak/renovasi

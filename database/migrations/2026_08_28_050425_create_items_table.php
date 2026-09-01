@@ -15,7 +15,20 @@ return new class extends Migration
             $table->id();
             $table->string('kode_barang', 50)->unique();
             $table->string('nama_barang');
-            $table->enum('kategori', ['Elektronik', 'Olahraga', 'Laboratorium', 'Buku', 'Lainnya'])->default('Lainnya');
+            $table->
+            enum('kategori', [
+                        'Elektronik',
+                        'Olahraga',
+                        'Laboratorium',
+                        'Buku',
+                        'Furniture',
+                        'Alat Kantor',
+                        'Kesenian',
+                        'Kebersihan',
+                        'Kesehatan',
+                        'Multimedia',
+                        'Lainnya',
+                ])->default('Lainnya');
             $table->integer('jumlah_total')->default(1);
             $table->text('deskripsi')->nullable();
             $table->boolean('bisa_dipinjam')->default(true);
