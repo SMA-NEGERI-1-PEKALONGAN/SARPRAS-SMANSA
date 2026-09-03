@@ -14,6 +14,7 @@ use App\Models\SystemNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Hash;
 
 new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Component
 {
@@ -46,6 +47,10 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
     public bool $termsAgreed = false;
     public ?string $signatureData = null;
 
+    public bool $isForcePasswordModalOpen = false;
+    public string $newPassword = '';
+    public string $newPassword_confirmation = '';
+    
     public array $form = [
         'waktu_mulai' => '',
         'waktu_selesai' => '',
@@ -72,6 +77,39 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
     public function mount(): void
     {
         $this->dateFilter = now()->format('Y-m-d');
+        if (auth()->check() && Hash::check('sekolah123', auth()->user()->password)) {
+            $this->isForcePasswordModalOpen = true;
+        }
+    }
+
+    public function updateDefaultPassword(): void
+    {
+        $this->validate([
+            'newPassword' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'newPassword.required' => 'Password baru wajib diisi.',
+            'newPassword.min' => 'Password baru minimal 8 karakter.',
+            'newPassword.confirmed' => 'Konfirmasi password tidak sesuai.',
+        ]);
+
+        $user = auth()->user();
+
+        if (!$user) {
+            abort(403);
+        }
+
+        $user->update([
+            'password' => Hash::make($this->newPassword),
+        ]);
+
+        $this->reset(['newPassword', 'newPassword_confirmation']);
+        $this->isForcePasswordModalOpen = false;
+
+        $this->dispatch(
+            'toast',
+            type: 'success',
+            message: 'Password berhasil diperbarui.'
+        );
     }
 
     protected function sendBookingNotification(Borrowing $borrowing): void
@@ -1089,7 +1127,7 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
 
             <div class="relative w-full sm:w-44">
                 <i class="absolute text-sm -translate-y-1/2 pointer-events-none left-3 top-1/2 fa-regular fa-calendar text-slate-400"></i>
-                <input type="date" wire:model.live="dateFilter" min="{{ now()->format('Y-m-d') }}" max="{{ now()->addWeek(2)->format('Y-m-d') }}" class="w-full py-2.5 pl-9 pr-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm md:w-full" placeholder="Masukan tanggal peminjaman">
+                <input type="date" wire:model.live="dateFilter" min="{{ now()->format('Y-m-d') }}" max="{{ now()->addWeek(2)->format('Y-m-d') }}" class="w-full py-2.5 pl-9 pr-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm md:w-full min-w-[200px]" placeholder="Masukan tanggal peminjaman">
             </div>
 
             <div class="relative flex-1 w-full sm:w-64">
@@ -1878,6 +1916,100 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
             </div>
         </div>
     </template>
+
+    {{-- Modal Reset Passowrd  --}}
+   <template x-teleport="body">
+        <div x-data="{ open: @entangle('isForcePasswordModalOpen') }" x-show="open" x-cloak class="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"></div>
+
+            <div
+                x-show="open"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                class="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900"
+            >
+                <div class="p-6 sm:p-7">
+                    <div class="flex items-center justify-center w-16 h-16 mx-auto rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                        <i class="text-2xl fa-solid fa-key"></i>
+                    </div>
+
+                    <div class="mt-5 text-center">
+                        <h3 class="text-xl font-extrabold text-slate-900 dark:text-white">
+                            Perbarui Password
+                        </h3>
+
+                        <p class="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                            Password akun Anda masih menggunakan password default
+                            <span class="font-bold text-amber-600">sekolah123</span>.
+                            Demi keamanan akun, silakan ubah password sebelum melanjutkan.
+                        </p>
+                    </div>
+
+                    <form wire:submit="updateDefaultPassword" class="mt-6 space-y-4">
+                        <div>
+                            <label class="block mb-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
+                                Password Baru
+                            </label>
+
+                            <input
+                                type="password"
+                                wire:model="newPassword"
+                                autocomplete="new-password"
+                                placeholder="Minimal 8 karakter"
+                                class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                            >
+
+                            @error('newPassword')
+                                <span class="mt-1 block text-[10px] font-medium text-rose-500">
+                                    {{ $message }}
+                                </span>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label class="block mb-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
+                                Konfirmasi Password Baru
+                            </label>
+
+                            <input
+                                type="password"
+                                wire:model="newPassword_confirmation"
+                                autocomplete="new-password"
+                                placeholder="Ulangi password baru"
+                                class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                            >
+                        </div>
+
+                        <div class="flex items-start gap-2 rounded-xl bg-blue-50 p-3 text-[10px] leading-relaxed text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+                            <i class="mt-0.5 fa-solid fa-circle-info"></i>
+                            <span>
+                                Gunakan password yang berbeda dari password default dan mudah Anda ingat.
+                            </span>
+                        </div>
+
+                        <button
+                            type="submit"
+                            wire:loading.attr="disabled"
+                            wire:target="updateDefaultPassword"
+                            class="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition hover:bg-brand-700 disabled:cursor-wait disabled:opacity-60"
+                        >
+                            <span wire:loading.remove wire:target="updateDefaultPassword">
+                                <i class="mr-1 fa-solid fa-shield-halved"></i>
+                                Simpan Password
+                            </span>
+
+                            <span wire:loading wire:target="updateDefaultPassword">
+                                <i class="mr-1 fa-solid fa-spinner animate-spin"></i>
+                                Menyimpan...
+                            </span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </template>
+    <x-toast />
 </div>
 <script>
     document.addEventListener('change', async (event) => {

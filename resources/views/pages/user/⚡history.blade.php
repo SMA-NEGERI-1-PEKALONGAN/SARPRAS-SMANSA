@@ -207,7 +207,7 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
         $code = $borrowing->kode_transaksi;
 
         $this->closeCancel();
-
+        
         $this->dispatch(
             'toast',
             type: 'success',
@@ -388,7 +388,6 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
         $this->sendReturnNotification($borrowing);
 
         $this->closeReturn();
-        $this->dispatch('toast', type: 'success', message: 'Pengembalian per item berhasil disimpan.');
         $this->dispatch(
             'toast',
             type: 'success',
@@ -602,84 +601,6 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
 ?>
 
 <div class="w-full max-w-7xl px-4 py-8 mx-auto mt-8 sm:px-6 lg:px-8 " x-data>
-    <style>
-        @media print {
-            @page {
-                size: A4 portrait;
-                margin: 10mm;
-            }
-
-            html,
-            body {
-                margin: 0 !important;
-                padding: 0 !important;
-                width: 100% !important;
-                min-height: 0 !important;
-                background: #fff !important;
-                overflow: visible !important;
-            }
-
-            body.printing-borrowing * {
-                visibility: hidden !important;
-            }
-
-            body.printing-borrowing #history-print-card,
-            body.printing-borrowing #history-print-card * {
-                visibility: visible !important;
-            }
-
-            body.printing-borrowing #history-print-card {
-                position: absolute !important;
-                top: 0 !important;
-                left: 50% !important;
-                width: 190mm !important;
-                max-width: 190mm !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                transform: translateX(-50%) !important;
-                background: #fff !important;
-                border-radius: 0 !important;
-                box-shadow: none !important;
-                overflow: visible !important;
-            }
-
-            body.printing-borrowing #history-print-preview {
-                position: static !important;
-                display: block !important;
-                width: 100% !important;
-                height: auto !important;
-                max-height: none !important;
-                min-height: 0 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                overflow: visible !important;
-                background: #fff !important;
-            }
-
-            body.printing-borrowing .print-modal {
-                position: static !important;
-                display: block !important;
-                width: auto !important;
-                max-width: none !important;
-                max-height: none !important;
-                overflow: visible !important;
-                background: transparent !important;
-            }
-
-            body.printing-borrowing .no-print {
-                display: none !important;
-            }
-
-            body.printing-borrowing .print-shadow {
-                box-shadow: none !important;
-            }
-
-            body.printing-borrowing #history-print-card {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-        }
-        </style>
 
     <div class="mt-8 mb-6 sm:mb-8">
         <h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">Riwayat Peminjaman</h1>
@@ -1931,15 +1852,228 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
         });
 
         
-        function printBorrowingDocument() {
-            document.body.classList.add('printing-borrowing');
+        async function printBorrowingDocument() {
+            const card = document.getElementById('history-print-card');
 
-            window.print();
+            if (!card) {
+                console.error('Elemen history-print-card tidak ditemukan.');
+                return;
+            }
 
+            // Ambil seluruh stylesheet yang sedang digunakan halaman
+            const styles = Array.from(
+                document.querySelectorAll('link[rel="stylesheet"], style')
+            )
+            .map(el => el.outerHTML)
+            .join('\n');
+
+            // Clone preview
+            const printCard = card.cloneNode(true);
+
+            // Buat window khusus untuk print
+            const printWindow = window.open(
+                '',
+                '_blank',
+                'width=1000,height=900'
+            );
+
+            if (!printWindow) {
+                alert('Popup diblokir browser. Izinkan popup untuk mencetak PDF.');
+                return;
+            }
+
+            printWindow.document.open();
+
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="id">
+                <head>
+                    <meta charset="UTF-8">
+
+                    <title>
+                        ${getPrintTitle()}
+                    </title>
+
+                    ${styles}
+
+                    <style>
+                        @page {
+                            size: A4 portrait;
+                            margin: 10mm;
+                        }
+
+                        * {
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+
+                        html,
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            background: #ffffff !important;
+                        }
+
+                        body {
+                            min-height: 100vh;
+                            font-family: Arial, sans-serif;
+                        }
+
+                        .print-wrapper {
+                            width: 100%;
+                            min-height: 100vh;
+                            display: flex;
+                            justify-content: center;
+                            align-items: flex-start;
+                            padding: 5mm 0;
+                        }
+
+                        #history-print-card {
+                            width: 100%;
+                            max-width: 108mm;
+                            margin: 0 auto !important;
+
+                            overflow: hidden;
+
+                            box-shadow: none !important;
+
+                            /* Pertahankan tampilan preview */
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+
+                            break-inside: avoid;
+                            page-break-inside: avoid;
+                        }
+
+                        img {
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+
+                        /*
+                        * Jangan ikutkan tombol/modal.
+                        */
+                        .no-print {
+                            display: none !important;
+                        }
+
+                        /*
+                        * Pastikan tidak ada scrollbar.
+                        */
+                        body,
+                        html {
+                            overflow: visible !important;
+                        }
+
+                        @media print {
+                            body {
+                                background: white !important;
+                            }
+
+                            .print-wrapper {
+                                padding: 0;
+                            }
+
+                            #history-print-card {
+                                break-inside: avoid;
+                                page-break-inside: avoid;
+                            }
+                        }
+                    </style>
+                </head>
+
+                <body>
+
+                    <div class="print-wrapper">
+                        ${printCard.outerHTML}
+                    </div>
+
+                </body>
+                </html>
+            `);
+
+            printWindow.document.close();
+
+            /*
+            * Tunggu semua gambar selesai loading,
+            * terutama QR Code.
+            */
+            await waitForImages(printWindow);
+
+            /*
+            * Tunggu font/style selesai.
+            */
+            try {
+                if (printWindow.document.fonts) {
+                    await printWindow.document.fonts.ready;
+                }
+            } catch (e) {
+                console.warn('Font loading warning:', e);
+            }
+
+            /*
+            * Beri waktu browser merender layout.
+            */
             setTimeout(() => {
-                document.body.classList.remove('printing-borrowing');
+                printWindow.focus();
+                printWindow.print();
+
+                /*
+                * Tutup window setelah dialog print selesai.
+                */
+                printWindow.onafterprint = () => {
+                    printWindow.close();
+                };
             }, 500);
         }
+
+        function getPrintTitle() {
+            const transaction =
+                @json($selectedBorrowing['kode_transaksi'] ?? 'peminjaman');
+
+            return `Kartu Peminjaman - ${transaction}`;
+        }
+
+        function waitForImages(win) {
+            return new Promise((resolve) => {
+                const images = Array.from(
+                    win.document.images
+                );
+
+                if (!images.length) {
+                    resolve();
+                    return;
+                }
+
+                let loaded = 0;
+
+                const done = () => {
+                    loaded++;
+
+                    if (loaded >= images.length) {
+                        resolve();
+                    }
+                };
+
+                images.forEach((img) => {
+
+                    if (img.complete) {
+                        done();
+                        return;
+                    }
+
+                    img.onload = done;
+                    img.onerror = done;
+                });
+
+                /*
+                * Fallback agar tidak menggantung
+                * jika QR/image eksternal bermasalah.
+                */
+                setTimeout(resolve, 5000);
+            });
+        }
     </script>
+    <x-toast />
 </div>
 

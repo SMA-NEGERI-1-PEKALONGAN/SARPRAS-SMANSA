@@ -330,7 +330,7 @@
      * public/assets/images/logo-smansa.png
      */
     $logoJateng = public_path('assets/images/logo-jateng.png');
-    $logoSekolah = public_path('assets/images/logo-smansa.png');
+    $logoSekolah = public_path('assets/images/logosmansa.png');
 
     /*
      * Format tanggal Bahasa Indonesia.

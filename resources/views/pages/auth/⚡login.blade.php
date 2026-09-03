@@ -3,6 +3,8 @@
 use Livewire\Component; 
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
+
 new #[Layout('layouts::auth')] class extends Component 
 {
     public string $username = '';
@@ -24,6 +26,13 @@ new #[Layout('layouts::auth')] class extends Component
 
         // Proses login
         if (Auth::attempt($credentials, $this->remember)) {
+            // check use active atau tidak 
+            $user = User::where('username', $this->username)->first();
+            if ($user->status == 'non-active') {
+                Auth::logout();
+                $this->dispatch('toast', type: 'error', message: 'Akun Anda sedang dinonaktifkan!');
+                return;
+            }
             $user = Auth::user();
             
             // Panggil Alpine Toast via Livewire Dispatch

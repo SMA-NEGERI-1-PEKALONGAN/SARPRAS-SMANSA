@@ -8,6 +8,7 @@ use Livewire\WithFileUploads;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Component
 {
@@ -20,10 +21,10 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
     */
     public $search = '';
     public $filterTipe = '';
+    public string $statusFilter = '';
     public $view = 10;
     public $sortColumn = 'name';
     public $sortDirection = 'asc';
-
     /*
     |--------------------------------------------------------------------------
     | State Modal
@@ -59,6 +60,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
     public $isImportFinished = false;
     public array $successList = [];
     public array $failedList = [];
+    public int $successCount = 0;
 
     /*
     |--------------------------------------------------------------------------
@@ -132,6 +134,11 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
             ? User::with('roles')
             : User::query();
 
+
+        // jika ada filter status
+        if ($this->statusFilter !== '') {
+            $query->where('status', $this->statusFilter === 'active' ? 1 : 0);
+        }
         /*
         |--------------------------------------------------------------------------
         | Search
@@ -239,7 +246,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
 
             'role' => 'required|string|max:50',
 
-            'status' => 'boolean',
+            'status' => 'required',
 
             'note' => 'nullable|string',
         ];
@@ -266,7 +273,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
 
             'role' => trim($this->role),
 
-            'status' => (bool) $this->status,
+            'status' => trim($this->status),
 
             'note' => $this->note
                 ? trim($this->note)
@@ -317,9 +324,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
             'status' => !$user->status,
         ]);
 
-        $statusText = $user->status
-            ? 'diaktifkan'
-            : 'dinonaktifkan';
+        $statusText = $user->status ? 'active' : 'non-active';
 
         $this->dispatch(
             'toast',
@@ -408,7 +413,6 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
     public function openImportModal()
     {
         $this->resetImportState();
-
         $this->resetValidation();
 
         $this->isImportModalOpen = true;
@@ -419,7 +423,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
     | Import CSV
     |--------------------------------------------------------------------------
     */
-    public function importData()
+    public function importData(): void
     {
         $this->validate([
             'importFile' => 'required|file|mimes:csv,txt|max:2048',
@@ -427,336 +431,170 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
 
         $this->successList = [];
         $this->failedList = [];
+        $this->successCount = 0;
 
         $handle = null;
+        $transactionStarted = false;
 
         try {
             $path = $this->importFile->getRealPath();
 
-            if (!$path || !file_exists($path)) {
-                throw new \Exception(
-                    'File import tidak dapat ditemukan.'
-                );
+            if (!$path || !is_readable($path)) {
+                throw new \RuntimeException('File import tidak dapat dibaca.');
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Deteksi delimiter
-            |--------------------------------------------------------------------------
-            */
-            $firstLine = file_get_contents(
-                $path,
-                false,
-                null,
-                0,
-                4096
-            );
+            $firstLine = file_get_contents($path, false, null, 0, 4096);
 
-            $commaCount = substr_count($firstLine, ',');
-            $semicolonCount = substr_count($firstLine, ';');
+            if ($firstLine === false) {
+                throw new \RuntimeException('File CSV tidak dapat dibaca.');
+            }
 
-            $delimiter = $semicolonCount > $commaCount
-                ? ';'
-                : ',';
-
+            $delimiter = substr_count($firstLine, ';') > substr_count($firstLine, ',') ? ';' : ',';
             $handle = fopen($path, 'r');
 
             if (!$handle) {
-                throw new \Exception(
-                    'File CSV tidak dapat dibaca.'
-                );
+                throw new \RuntimeException('File CSV tidak dapat dibuka.');
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Header
-            |--------------------------------------------------------------------------
-            */
-            $header = fgetcsv(
-                $handle,
-                0,
-                $delimiter
-            );
+            $header = fgetcsv($handle, 0, $delimiter);
 
             if (!$header) {
-                fclose($handle);
-
-                $this->dispatch(
-                    'toast',
-                    type: 'error',
-                    message: 'File CSV kosong atau tidak valid.'
-                );
-
-                return;
+                throw new \RuntimeException('File CSV kosong atau tidak valid.');
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Bersihkan Header
-            |--------------------------------------------------------------------------
-            */
             $header = array_map(
-                function ($value) {
-                    return strtolower(
-                        trim(
-                            preg_replace(
-                                '/^\xEF\xBB\xBF/',
-                                '',
-                                $value
-                            )
-                        )
-                    );
-                },
+                fn ($value) => strtolower(trim(preg_replace('/^\xEF\xBB\xBF/', '', (string) $value))),
                 $header
             );
 
-            /*
-            |--------------------------------------------------------------------------
-            | Header wajib
-            |--------------------------------------------------------------------------
-            */
-            $requiredColumns = [
-                'username',
-                'name',
-            ];
-
-            foreach ($requiredColumns as $column) {
-                if (!in_array($column, $header)) {
-                    fclose($handle);
-
-                    $this->dispatch(
-                        'toast',
-                        type: 'error',
-                        message: "Kolom wajib '{$column}' tidak ditemukan pada CSV."
-                    );
-
-                    return;
+            foreach (['username', 'name'] as $column) {
+                if (!in_array($column, $header, true)) {
+                    throw new \RuntimeException("Kolom wajib '{$column}' tidak ditemukan pada CSV.");
                 }
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Transaction
-            |--------------------------------------------------------------------------
-            */
-            DB::beginTransaction();
-
+            $defaultPasswordHash = Hash::make('sekolah123');
+            $rows = [];
             $rowNumber = 1;
 
-            while (($row = fgetcsv(
-                $handle,
-                0,
-                $delimiter
-            )) !== false) {
-
+            while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
                 $rowNumber++;
 
-                /*
-                |--------------------------------------------------------------------------
-                | Lewati baris kosong
-                |--------------------------------------------------------------------------
-                */
-                if (
-                    count($row) === 1 &&
-                    trim($row[0] ?? '') === ''
-                ) {
+                if (count($row) === 1 && trim((string) ($row[0] ?? '')) === '') {
                     continue;
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Jumlah kolom tidak sesuai
-                |--------------------------------------------------------------------------
-                */
                 if (count($header) !== count($row)) {
-
                     $this->failedList[] = [
                         'row' => $rowNumber,
                         'kode' => $row[0] ?? '-',
                         'reason' => 'Jumlah kolom tidak sesuai dengan header.',
                     ];
-
                     continue;
                 }
 
-                $rowData = array_combine(
-                    $header,
-                    $row
-                );
+                $rowData = array_combine($header, $row);
+                $username = trim((string) ($rowData['username'] ?? ''));
+                $name = trim((string) ($rowData['name'] ?? ''));
 
-                /*
-                |--------------------------------------------------------------------------
-                | Data utama
-                |--------------------------------------------------------------------------
-                */
-                $username = trim(
-                    $rowData['username'] ?? ''
-                );
-
-                $name = trim(
-                    $rowData['name'] ?? ''
-                );
-
-                /*
-                |--------------------------------------------------------------------------
-                | Validasi username
-                |--------------------------------------------------------------------------
-                */
                 if ($username === '') {
                     $this->failedList[] = [
                         'row' => $rowNumber,
                         'kode' => '-',
                         'reason' => 'Username wajib diisi.',
                     ];
-
                     continue;
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Validasi nama
-                |--------------------------------------------------------------------------
-                */
                 if ($name === '') {
                     $this->failedList[] = [
                         'row' => $rowNumber,
                         'kode' => $username,
                         'reason' => 'Nama wajib diisi.',
                     ];
-
                     continue;
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Role
-                |--------------------------------------------------------------------------
-                */
-                $roleValue = trim(
-                    $rowData['role'] ?? ''
-                );
+                $roleValue = trim((string) ($rowData['role'] ?? '')) ?: 'siswa';
+                $statusValue = strtolower(trim((string) ($rowData['status'] ?? 'active')));
 
-                if ($roleValue === '') {
-                    $roleValue = 'siswa';
-                }
+                $status = match ($statusValue) {
+                    'active', 'aktif', '1', 'true' => 1,
+                    'non-active', 'nonaktif', 'non-aktif', 'inactive', '0', 'false' => 0,
+                    default => 1,
+                };
 
-                /*
-                |--------------------------------------------------------------------------
-                | User Data
-                |--------------------------------------------------------------------------
-                */
-                $userData = [
+                $password = trim((string) ($rowData['password'] ?? ''));
+
+                $rows[] = [
+                    'username' => $username,
                     'name' => $name,
-
-                    'no_hp' => !empty($rowData['no_hp'])
-                        ? trim($rowData['no_hp'])
-                        : null,
-
+                    'no_hp' => trim((string) ($rowData['no_hp'] ?? '')) ?: null,
                     'role' => $roleValue,
-
-                    'note' => !empty($rowData['note'])
-                        ? trim($rowData['note'])
-                        : null,
-
-                    'status' => 1,
+                    'note' => trim((string) ($rowData['note'] ?? '')) ?: null,
+                    'password' => $password !== '' ? Hash::make($password) : $defaultPasswordHash,
+                    'status' => $status,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ];
-
-                /*
-                |--------------------------------------------------------------------------
-                | Password
-                |--------------------------------------------------------------------------
-                */
-                if (!empty($rowData['password'])) {
-                    $userData['password'] = Hash::make(
-                        trim($rowData['password'])
-                    );
-                } else {
-                    $userData['password'] = Hash::make(
-                        'sekolah123'
-                    );
-                }
-
-                /*
-                |--------------------------------------------------------------------------
-                | Cek Existing
-                |--------------------------------------------------------------------------
-                */
-                $existingUser = User::where(
-                    'username',
-                    $username
-                )->first();
-
-                /*
-                |--------------------------------------------------------------------------
-                | Update / Create
-                |--------------------------------------------------------------------------
-                */
-                if ($existingUser) {
-
-                    $existingUser->update($userData);
-
-                    $this->successList[] =
-                        "{$username} — {$name} (diperbarui)";
-
-                } else {
-
-                    User::create(array_merge(
-                        [
-                            'username' => $username,
-                        ],
-                        $userData
-                    ));
-
-                    $this->successList[] =
-                        "{$username} — {$name} (ditambahkan)";
-                }
             }
-
-            DB::commit();
 
             fclose($handle);
             $handle = null;
 
-            /*
-            |--------------------------------------------------------------------------
-            | Selesai
-            |--------------------------------------------------------------------------
-            */
+            if (empty($rows)) {
+                $this->importFile = null;
+                $this->isImportFinished = true;
+                $this->dispatch('toast', type: 'warning', message: 'Tidak ada data valid yang dapat diimport.');
+                return;
+            }
+
+            DB::beginTransaction();
+            $transactionStarted = true;
+
+            foreach (array_chunk($rows, 200) as $chunk) {
+                User::upsert(
+                    $chunk,
+                    ['username'],
+                    ['name', 'no_hp', 'role', 'note', 'password', 'status', 'updated_at']
+                );
+
+                $this->successCount += count($chunk);
+
+                foreach ($chunk as $data) {
+                    if (count($this->successList) >= 50) {
+                        break;
+                    }
+
+                    $this->successList[] = "{$data['username']} — {$data['name']}";
+                }
+            }
+
+            DB::commit();
+            $transactionStarted = false;
+            $this->importFile = null;
             $this->isImportFinished = true;
 
-            $this->importFile = null;
-
-            $successCount = count(
-                $this->successList
-            );
-
-            $failedCount = count(
-                $this->failedList
-            );
-
-            if ($failedCount > 0) {
-                $message =
-                    "Import selesai: {$successCount} berhasil, {$failedCount} gagal.";
-                $type = 'warning';
-            } else {
-                $message =
-                    "Import selesai: {$successCount} data berhasil diproses.";
-                $type = 'success';
-            }
+            $failedCount = count($this->failedList);
+            $message = $failedCount > 0
+                ? "Import selesai: {$this->successCount} berhasil, {$failedCount} gagal."
+                : "Import selesai: {$this->successCount} data berhasil diproses.";
 
             $this->dispatch(
                 'toast',
-                type: $type,
+                type: $failedCount > 0 ? 'warning' : 'success',
                 message: $message
             );
-
         } catch (\Throwable $e) {
-
-            if ($handle) {
+            if (is_resource($handle)) {
                 fclose($handle);
             }
 
-            DB::rollBack();
+            if ($transactionStarted) {
+                DB::rollBack();
+            }
+
+            report($e);
 
             $this->dispatch(
                 'toast',
@@ -776,6 +614,8 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
         $this->importFile = null;
 
         $this->isImportFinished = false;
+
+        $this->successCount = 0;
 
         $this->successList = [];
 
@@ -842,6 +682,61 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
     {
         $this->isModalOpen = false;
     }
+
+    public function exportCSV(): StreamedResponse
+    {
+        $users = User::query()
+            ->when($this->search, function ($query) {
+                $term = '%' . $this->search . '%';
+
+                $query->where(function ($q) use ($term) {
+                    $q->where('name', 'like', $term)
+                        ->orWhere('username', 'like', $term)
+                        ->orWhere('no_hp', 'like', $term);
+                });
+            })
+            ->when($this->filterTipe, function ($query) {
+                $query->where('role', $this->filterTipe);
+            })
+            ->when($this->statusFilter !== '', function ($query) {
+                $query->where(
+                    'status',
+                    $this->statusFilter === 'active' ? 1 : 0
+                );
+            })
+            ->orderBy('name')
+            ->get();
+
+        $filename = 'users-' . now()->format('Y-m-d-His') . '.csv';
+
+        return response()->streamDownload(function () use ($users) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'username',
+                'name',
+                'no_hp',
+                'role',
+                'note',
+                'status',
+            ]);
+
+            foreach ($users as $user) {
+                fputcsv($handle, [
+                    $user->username,
+                    $user->name,
+                    $user->no_hp,
+                    $user->role,
+                    $user->note,
+                    $user->status ? 'active' : 'non-active',
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
 };
 
 ?>
@@ -879,6 +774,16 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
             >
                 <i class="fa-solid fa-file-import"></i>
                 Import CSV
+            </x-button>
+
+            <x-button
+                type="button"
+                wire:click="exportCSV"
+                variant="secondary"
+                class="flex items-center gap-2"
+            >
+                <i class="fa-solid fa-file-export"></i>
+                Export CSV
             </x-button>
 
             <x-button
@@ -945,6 +850,16 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
                         </option>
                     </select>
 
+                </div>
+
+                {{-- Status --}}
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Status</span>
+                    <select wire:model.live="statusFilter" class="rounded-xl border-none bg-gray-50 px-3 py-2 text-xs font-bold outline-none focus:ring-indigo-500 dark:bg-gray-800 dark:text-white">
+                        <option value="">Semua Status</option>
+                        <option value="active">Aktif</option>
+                        <option value="non-active">Non-Aktif</option>
+                    </select>
                 </div>
 
             </div>
@@ -1391,356 +1306,149 @@ new #[Layout('layouts.app')] #[Title('Manajemen Pengguna')] class extends Compon
     {{-- MODAL IMPORT CSV --}}
     {{-- ========================================================= --}}
     <section x-data="{ openImport: @entangle('isImportModalOpen') }">
-
         <template x-teleport="body">
-
-            <div
-                x-show="openImport"
-                class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-                x-cloak
-            >
-
-                {{-- Backdrop --}}
-                <div
-                    x-show="openImport"
-                    x-transition.opacity
-                    wire:click="closeImportModal"
-                    class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm"
-                ></div>
-
-                {{-- Modal --}}
-                <div
-                    x-show="openImport"
-                    x-transition:enter="transition ease-out duration-300"
-                    x-transition:enter-start="opacity-0 scale-95 translate-y-4"
-                    x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                    x-transition:leave="transition ease-in duration-200"
-                    x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                    x-transition:leave-end="opacity-0 scale-95 translate-y-4"
-                    class="relative z-10 flex flex-col w-full max-w-2xl max-h-[90vh] p-8 overflow-hidden bg-white shadow-2xl dark:bg-gray-900 rounded-3xl"
-                >
-
-                    {{-- Loading --}}
-                    <div
-                        wire:loading.flex
-                        wire:target="importData"
-                        class="absolute inset-0 z-20 flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-3xl"
-                    >
-
+            <div x-show="openImport" x-cloak class="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                <div x-show="openImport" x-transition.opacity wire:click="closeImportModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm"></div>
+                <div x-show="openImport" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95 translate-y-4" x-transition:enter-end="opacity-100 scale-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100 translate-y-0" x-transition:leave-end="opacity-0 scale-95 translate-y-4" class="relative z-10 flex flex-col w-full max-w-2xl max-h-[90vh] overflow-hidden p-6 sm:p-8 bg-white shadow-2xl dark:bg-gray-900 rounded-3xl">
+                    <div wire:loading.flex wire:target="importData" class="absolute inset-0 z-20 flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-3xl">
                         <i class="mb-4 text-5xl text-indigo-600 fa-solid fa-spinner fa-spin"></i>
-
-                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">
-                            Sedang Memproses Data...
-                        </h3>
-
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                            Mohon jangan menutup jendela ini.
-                        </p>
-
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">Sedang Memproses Data...</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Mohon jangan menutup jendela ini.</p>
                     </div>
 
-                    {{-- Header --}}
                     <div class="flex items-center justify-between mb-5">
-
                         <div>
-                            <h4 class="text-xl font-bold text-gray-900 dark:text-white">
-                                Import Pengguna
-                            </h4>
-
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Import data pengguna melalui file CSV.
-                            </p>
+                            <h4 class="text-xl font-bold text-gray-900 dark:text-white">Import Pengguna</h4>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Import data pengguna melalui file CSV.</p>
                         </div>
-
-                        <button
-                            type="button"
-                            wire:click="closeImportModal"
-                            class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-white"
-                        >
+                        <button type="button" wire:click="closeImportModal" class="flex items-center justify-center w-9 h-9 text-gray-400 rounded-xl hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-white">
                             <i class="text-xl fa-solid fa-xmark"></i>
                         </button>
-
                     </div>
 
-                    {{-- FORM IMPORT --}}
                     @if(!$isImportFinished)
-
                         <div class="mb-5 text-sm text-gray-600 dark:text-gray-400">
-
-                            <p class="mb-2">
-                                Gunakan file CSV dengan header berikut:
-                            </p>
-
-                            <div class="p-3 font-mono text-[10px] bg-gray-100 rounded-lg dark:bg-gray-800">
-                                username, name, no_hp, role, note, password
-                            </div>
-
+                            <p class="mb-2">Gunakan file CSV dengan header berikut:</p>
+                            <div class="p-3 font-mono text-[10px] break-all bg-gray-100 rounded-lg dark:bg-gray-800">username, name, no_hp, role, note, password, status</div>
                             <div class="p-3 mt-3 text-xs border rounded-xl border-indigo-100 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-300">
-
                                 <div class="flex gap-2">
-
                                     <i class="mt-0.5 fa-solid fa-circle-info"></i>
-
                                     <div>
-                                        <strong>Catatan Import:</strong>
-
+                                        <strong>Catatan Import</strong>
                                         <ul class="mt-1 space-y-1 list-disc list-inside">
-                                            <li>
-                                                <strong>username</strong> dan
-                                                <strong>name</strong> wajib diisi.
-                                            </li>
-
-                                            <li>
-                                                Username yang sudah ada akan diperbarui.
-                                            </li>
-
-                                            <li>
-                                                Username baru akan ditambahkan.
-                                            </li>
-
-                                            <li>
-                                                Password kosong otomatis menjadi
-                                                <strong>sekolah123</strong>.
-                                            </li>
-
-                                            <li>
-                                                CSV dapat menggunakan pemisah
-                                                <strong>koma (,)</strong> atau
-                                                <strong>titik koma (;)</strong>.
-                                            </li>
+                                            <li><strong>username</strong> dan <strong>name</strong> wajib diisi.</li>
+                                            <li>Username yang sudah ada akan diperbarui.</li>
+                                            <li>Username baru akan ditambahkan.</li>
+                                            <li>Password kosong otomatis menjadi <strong>sekolah123</strong>.</li>
+                                            <li>Status dapat diisi <strong>active</strong> atau <strong>non-active</strong>.</li>
+                                            <li>CSV dapat menggunakan pemisah <strong>koma (,)</strong> atau <strong>titik koma (;)</strong>.</li>
                                         </ul>
-
                                     </div>
-
                                 </div>
-
                             </div>
-
                         </div>
 
-                        <form
-                            wire:submit="importData"
-                            class="space-y-4"
-                        >
-
+                        <form wire:submit="importData" class="space-y-4">
                             <div>
-
-                                <input
-                                    type="file"
-                                    wire:model="importFile"
-                                    accept=".csv,.txt"
-                                    class="block w-full text-sm text-gray-500
-                                    file:mr-4 file:py-2 file:px-4
-                                    file:rounded-full file:border-0
-                                    file:text-sm file:font-semibold
-                                    file:bg-indigo-50 file:text-indigo-700
-                                    hover:file:bg-indigo-100
-                                    dark:file:bg-gray-800
-                                    dark:file:text-gray-300"
-                                >
-
+                                <input type="file" wire:model="importFile" accept=".csv,.txt" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-gray-800 dark:file:text-gray-300">
                                 @error('importFile')
-                                    <span class="block mt-1 text-xs text-red-500">
-                                        {{ $message }}
-                                    </span>
+                                    <span class="block mt-1 text-xs text-red-500">{{ $message }}</span>
                                 @enderror
-
                             </div>
 
-                            <div
-                                wire:loading
-                                wire:target="importFile"
-                                class="text-xs text-indigo-600"
-                            >
-                                <i class="mr-1 fa-solid fa-spinner fa-spin"></i>
-                                Mengunggah file...
+                            <div wire:loading wire:target="importFile" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                                <i class="mr-1 fa-solid fa-spinner fa-spin"></i>Mengunggah file...
                             </div>
 
                             <div class="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
-
-                                <x-button
-                                    type="button"
-                                    wire:click="closeImportModal"
-                                    variant="secondary"
-                                    class="text-gray-700 bg-gray-100 hover:bg-gray-200"
-                                >
+                                <x-button type="button" wire:click="closeImportModal" variant="secondary" class="text-gray-700 bg-gray-100 hover:bg-gray-200">
                                     Batal
                                 </x-button>
-
-                                <x-button
-                                    type="submit"
-                                    variant="primary"
-                                    wire:loading.attr="disabled"
-                                    wire:target="importData"
-                                    class="shadow-lg shadow-indigo-500/20"
-                                >
-
-                                    <span wire:loading.remove wire:target="importData">
-                                        <i class="mr-2 fa-solid fa-file-import"></i>
-                                        Proses Import
-                                    </span>
-
-                                    <span wire:loading wire:target="importData">
-                                        <i class="mr-2 fa-solid fa-circle-notch fa-spin"></i>
-                                        Memproses...
-                                    </span>
-
+                                <x-button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="importData" class="shadow-lg shadow-indigo-500/20">
+                                    <span wire:loading.remove wire:target="importData"><i class="mr-2 fa-solid fa-file-import"></i>Proses Import</span>
+                                    <span wire:loading wire:target="importData"><i class="mr-2 fa-solid fa-circle-notch fa-spin"></i>Memproses...</span>
                                 </x-button>
-
                             </div>
-
                         </form>
-
                     @else
-
-                        {{-- ================================================= --}}
-                        {{-- HASIL IMPORT --}}
-                        {{-- ================================================= --}}
-                        <div class="flex-1 pr-2 overflow-y-auto">
-
-                            {{-- Success --}}
-                            <div class="mb-5">
-
-                                <h5 class="flex items-center gap-2 mb-2 font-bold text-emerald-600">
-                                    <i class="fa-solid fa-circle-check"></i>
-                                    Berhasil Diproses
-                                    ({{ count($successList) }})
-                                </h5>
-
-                                <div class="p-3 text-xs overflow-y-auto max-h-48 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/50">
-
-                                    @if(count($successList) > 0)
-
-                                        <ul class="space-y-1 list-disc list-inside">
-
-                                            @foreach($successList as $success)
-
-                                                <li>
-                                                    {{ $success }}
-                                                </li>
-
-                                            @endforeach
-
-                                        </ul>
-
-                                    @else
-
-                                        <p class="italic text-emerald-600/70">
-                                            Tidak ada data yang berhasil.
-                                        </p>
-
-                                    @endif
-
+                        <div class="flex-1 pr-1 overflow-y-auto space-y-5">
+                            <div>
+                                <div class="flex items-center justify-between gap-3 mb-2">
+                                    <h5 class="flex items-center gap-2 font-bold text-emerald-600">
+                                        <i class="fa-solid fa-circle-check"></i>Berhasil Diproses
+                                    </h5>
+                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                        {{ $successCount }}
+                                    </span>
                                 </div>
 
+                                <div class="p-3 overflow-y-auto text-xs border max-h-56 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/50">
+                                    @if(!empty($successList))
+                                        <div class="space-y-1">
+                                            @foreach($successList as $success)
+                                                <div class="flex items-center gap-2 px-3 py-2 bg-white/70 dark:bg-emerald-950/30 rounded-lg">
+                                                    <i class="text-[10px] fa-solid fa-check text-emerald-500"></i>
+                                                    <span class="break-all">{{ $success }}</span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <p class="italic text-emerald-600/70">Tidak ada data yang berhasil diproses.</p>
+                                    @endif
+                                </div>
                             </div>
 
-                            {{-- Failed --}}
                             <div>
-
-                                <h5 class="flex items-center gap-2 mb-2 font-bold text-red-600">
-
-                                    <i class="fa-solid fa-circle-xmark"></i>
-
-                                    Gagal Diproses
-                                    ({{ count($failedList) }})
-
-                                </h5>
+                                <div class="flex items-center justify-between gap-3 mb-2">
+                                    <h5 class="flex items-center gap-2 font-bold text-red-600">
+                                        <i class="fa-solid fa-circle-xmark"></i>Gagal Diproses
+                                    </h5>
+                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                        {{ count($failedList) }}
+                                    </span>
+                                </div>
 
                                 <div class="overflow-hidden border border-red-100 rounded-xl dark:border-red-800/50">
-
                                     <div class="overflow-y-auto max-h-56 bg-red-50 dark:bg-red-900/20">
-
-                                        @if(count($failedList) > 0)
-
+                                        @if(!empty($failedList))
                                             <table class="w-full text-xs text-left text-red-700 dark:text-red-400">
-
                                                 <thead class="sticky top-0 bg-red-100 dark:bg-red-900">
-
                                                     <tr>
-
-                                                        <th class="px-3 py-2 font-bold">
-                                                            Baris
-                                                        </th>
-
-                                                        <th class="px-3 py-2 font-bold">
-                                                            Username
-                                                        </th>
-
-                                                        <th class="px-3 py-2 font-bold">
-                                                            Alasan
-                                                        </th>
-
+                                                        <th class="px-3 py-2 font-bold">Baris</th>
+                                                        <th class="px-3 py-2 font-bold">Username</th>
+                                                        <th class="px-3 py-2 font-bold">Alasan</th>
                                                     </tr>
-
                                                 </thead>
-
                                                 <tbody class="divide-y divide-red-100 dark:divide-red-800/30">
-
                                                     @foreach($failedList as $fail)
-
                                                         <tr>
-
-                                                            <td class="px-3 py-2">
-                                                                {{ $fail['row'] }}
-                                                            </td>
-
-                                                            <td class="px-3 py-2">
-                                                                {{ $fail['kode'] }}
-                                                            </td>
-
-                                                            <td class="px-3 py-2">
-                                                                {{ $fail['reason'] }}
-                                                            </td>
-
+                                                            <td class="px-3 py-2">{{ $fail['row'] ?? '-' }}</td>
+                                                            <td class="px-3 py-2 break-all">{{ $fail['kode'] ?? '-' }}</td>
+                                                            <td class="px-3 py-2">{{ $fail['reason'] ?? 'Data tidak valid.' }}</td>
                                                         </tr>
-
                                                     @endforeach
-
                                                 </tbody>
-
                                             </table>
-
                                         @else
-
-                                            <p class="p-3 text-xs italic text-red-600/70">
-                                                Semua data berhasil diproses.
-                                            </p>
-
+                                            <p class="p-3 text-xs italic text-red-600/70">Semua data berhasil diproses.</p>
                                         @endif
-
                                     </div>
-
                                 </div>
-
                             </div>
-
                         </div>
 
-                        {{-- Footer --}}
                         <div class="flex justify-end pt-4 mt-5 border-t border-gray-100 dark:border-gray-800">
-
-                            <x-button
-                                type="button"
-                                wire:click="closeImportModal"
-                                variant="secondary"
-                                class="text-gray-700 bg-gray-100 hover:bg-gray-200"
-                            >
-                                <i class="mr-2 fa-solid fa-xmark"></i>
-                                Tutup
+                            <x-button type="button" wire:click="closeImportModal" variant="secondary" class="text-gray-700 bg-gray-100 hover:bg-gray-200">
+                                <i class="mr-2 fa-solid fa-xmark"></i>Tutup
                             </x-button>
-
                         </div>
-
                     @endif
-
                 </div>
-
             </div>
-
         </template>
-
     </section>
+
+
 
     {{-- ========================================================= --}}
     {{-- MODAL RESET PASSWORD --}}

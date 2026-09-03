@@ -37,6 +37,7 @@
         href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet"
     >
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.35.0/tabler-icons.min.css" />
 
     {{-- ===================================================== --}}
     {{-- Font Awesome --}}
@@ -399,12 +400,7 @@
     @stack('styles')
 </head>
 
-<body
-    class="min-h-screen flex flex-col antialiased
-           text-slate-800 dark:text-slate-200
-           bg-slate-50 dark:bg-slate-900
-           transition-colors duration-300"
->
+<body class="min-h-screen flex flex-col antialiased text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
     {{-- ===================================================== --}}
     {{-- Modern Responsive Navbar --}}
     {{-- ===================================================== --}}
@@ -420,12 +416,7 @@
     {{-- ===================================================== --}}
     {{-- Footer --}}
     {{-- ===================================================== --}}
-    <footer
-        class="pt-16 pb-8 mt-auto
-               text-slate-400
-               bg-slate-900 dark:bg-slate-950
-               border-t border-slate-800"
-    >
+    <footer class="pt-16 pb-8 mt-auto text-slate-400 bg-slate-900 dark:bg-slate-950 border-t border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
             <div
@@ -444,10 +435,10 @@
                         <div
                             class="flex items-center justify-center
                                    w-9 h-9 rounded-xl
-                                   bg-blue-600
-                                   text-white font-bold"
+                                   font-bold"
                         >
-                            <i class="fa-solid fa-handshake"></i>
+                            {{-- <i class="fa-solid fa-handshake"></i> --}}
+                            <img src="{{ asset('img/logosmansa.png') }}" alt="Logo" class="h-9 w-9">
                         </div>
 
                         <span class="text-xl font-bold text-white">
