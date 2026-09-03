@@ -6,6 +6,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushMessage;
+use NotificationChannels\WebPush\WebPushChannel;
 
 class SystemPushNotification extends Notification implements ShouldQueue
 {
@@ -20,7 +21,7 @@ class SystemPushNotification extends Notification implements ShouldQueue
 
     public function via($notifiable): array
     {
-        return ['webpush'];
+        return [WebPushChannel::class];
     }
 
     public function toWebPush($notifiable, $notification): WebPushMessage
@@ -36,4 +37,6 @@ class SystemPushNotification extends Notification implements ShouldQueue
                 'message' => $this->message,
             ]);
     }
+
+    
 }
