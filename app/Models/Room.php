@@ -14,6 +14,7 @@ class Room extends Model
         'kode_ruangan',
         'nama_ruangan',
         'lokasi',
+        'tipe',
         'kapasitas',
         'fasilitas',
         'deskripsi',

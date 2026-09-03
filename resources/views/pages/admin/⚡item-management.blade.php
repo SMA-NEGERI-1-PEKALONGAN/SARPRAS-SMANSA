@@ -106,7 +106,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Barang (Inventaris)')] class ext
         $this->validate([
             'kode_barang' => ['required', 'string', 'max:50', Rule::unique('items')->ignore($this->editingItem?->id)],
             'nama_barang' => 'required|string|max:255',
-            'kategori' => 'required|in:Elektronik,Olahraga,Laboratorium,Buku,Lainnya',
+            'kategori' => 'required|in:Elektronik,Olahraga,Laboratorium,Buku,Furniture,Alat Kantor,Kesenian,Kebersihan,Kesehatan,Multimedia,Lainnya',
             'jumlah_total' => 'required|integer|min:1',
             'deskripsi' => 'nullable|string',
             'bisa_dipinjam' => 'boolean',
@@ -200,7 +200,18 @@ new #[Layout('layouts.app')] #[Title('Manajemen Barang (Inventaris)')] class ext
             $header = fgetcsv($handle, 1000, $delimiter); 
             $rowNum = 2; // Mulai perhitungan dari baris ke-2 (setelah header)
             
-            $allowedKategori = ['Elektronik', 'Olahraga', 'Laboratorium', 'Buku', 'Lainnya'];
+            $allowedKategori = ['Elektronik',
+                                    'Olahraga',
+                                    'Laboratorium',
+                                    'Buku',
+                                    'Furniture',
+                                    'Alat Kantor',
+                                    'Kesenian',
+                                    'Kebersihan',
+                                    'Kesehatan',
+                                    'Multimedia',
+                                    'Lainnya',
+                                ];
             
             // Array penampung sementara untuk deteksi duplikat di dalam file CSV yang sama
             $processedCodes = [];
@@ -342,6 +353,12 @@ new #[Layout('layouts.app')] #[Title('Manajemen Barang (Inventaris)')] class ext
                         <option value="Olahraga">Olahraga</option>
                         <option value="Laboratorium">Laboratorium</option>
                         <option value="Buku">Buku</option>
+                        <option value="Furniture">Furniture</option>
+                        <option value="Alat Kantor">Alat Kantor</option>
+                        <option value="Kesenian">Kesenian</option>
+                        <option value="Kebersihan">Kebersihan</option>
+                        <option value="Kesehatan">Kesehatan</option>
+                        <option value="Multimedia">Multimedia</option>
                         <option value="Lainnya">Lainnya</option>
                     </select>
                 </div>
@@ -484,11 +501,17 @@ new #[Layout('layouts.app')] #[Title('Manajemen Barang (Inventaris)')] class ext
                                     Barang</label>
                                 <select wire:model="kategori"
                                     class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white">
-                                    <option value="">-- Pilih Kategori --</option>
+                                    <option value="">Semua Kategori</option>
                                     <option value="Elektronik">Elektronik</option>
                                     <option value="Olahraga">Olahraga</option>
                                     <option value="Laboratorium">Laboratorium</option>
                                     <option value="Buku">Buku</option>
+                                    <option value="Furniture">Furniture</option>
+                                    <option value="Alat Kantor">Alat Kantor</option>
+                                    <option value="Kesenian">Kesenian</option>
+                                    <option value="Kebersihan">Kebersihan</option>
+                                    <option value="Kesehatan">Kesehatan</option>
+                                    <option value="Multimedia">Multimedia</option>
                                     <option value="Lainnya">Lainnya</option>
                                 </select>
                                 @error('kategori') <span class="mt-1 text-xs text-red-500">{{ $message }}</span>
@@ -609,8 +632,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Barang (Inventaris)')] class ext
                                         <strong>kode ruangan</strong> dan
                                         <strong>name</strong> wajib diisi.
                                     </li>
-                                    <li><span class="font-bold">kategori:</span> Elektronik, Olahraga, Laboratorium, Buku,
-                                        Lainnya.</li>
+                                    <li><span class="font-bold">kategori:</span> Elektronik, Olahraga, Laboratorium,Buku, Furniture, Alat Kantor, Kesenian, Kebersihan, Kesehatan, Multimedia, Lainnya.</li>
                                     <li><span class="font-bold">izin:</span> 1 atau TRUE (Bisa Dipinjam), 0 atau FALSE (Tidak).
                                     </li>
                                     <li>

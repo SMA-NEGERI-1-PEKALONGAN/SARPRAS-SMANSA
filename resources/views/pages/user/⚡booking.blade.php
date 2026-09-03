@@ -1127,7 +1127,7 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
 
             <div class="relative w-full sm:w-44">
                 <i class="absolute text-sm -translate-y-1/2 pointer-events-none left-3 top-1/2 fa-regular fa-calendar text-slate-400"></i>
-                <input type="date" wire:model.live="dateFilter" min="{{ now()->format('Y-m-d') }}" max="{{ now()->addWeek(2)->format('Y-m-d') }}" class="w-full py-2.5 pl-9 pr-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm md:w-full min-w-[200px]" placeholder="Masukan tanggal peminjaman">
+                <input type="date" wire:model.live="dateFilter" min="{{ now()->format('Y-m-d') }}" max="{{ now()->addWeek(2)->format('Y-m-d') }}" class="w-full py-2.5 pl-9 pr-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm md:w-full " placeholder="Masukan tanggal peminjaman">
             </div>
 
             <div class="relative flex-1 w-full sm:w-64">
@@ -1945,47 +1945,55 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
                             Demi keamanan akun, silakan ubah password sebelum melanjutkan.
                         </p>
                     </div>
-
                     <form wire:submit="updateDefaultPassword" class="mt-6 space-y-4">
                         <div>
-                            <label class="block mb-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
-                                Password Baru
-                            </label>
-
-                            <input
-                                type="password"
-                                wire:model="newPassword"
-                                autocomplete="new-password"
-                                placeholder="Minimal 8 karakter"
-                                class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                            >
-
+                            <label class="block mb-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">Password Baru</label>
+                            <div x-data="{ show: false }" class="relative">
+                                <input
+                                    :type="show ? 'text' : 'password'"
+                                    wire:model="newPassword"
+                                    autocomplete="new-password"
+                                    placeholder="Minimal 8 karakter"
+                                    class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-4 pr-11 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                >
+                                <button
+                                    type="button"
+                                    @click="show = !show"
+                                    class="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition hover:text-brand-600 dark:hover:text-brand-400"
+                                    :aria-label="show ? 'Sembunyikan password' : 'Tampilkan password'"
+                                >
+                                    <i class="fa-solid" :class="show ? 'fa-eye-slash' : 'fa-eye'"></i>
+                                </button>
+                            </div>
                             @error('newPassword')
-                                <span class="mt-1 block text-[10px] font-medium text-rose-500">
-                                    {{ $message }}
-                                </span>
+                                <span class="mt-1 block text-[10px] font-medium text-rose-500">{{ $message }}</span>
                             @enderror
                         </div>
 
                         <div>
-                            <label class="block mb-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
-                                Konfirmasi Password Baru
-                            </label>
-
-                            <input
-                                type="password"
-                                wire:model="newPassword_confirmation"
-                                autocomplete="new-password"
-                                placeholder="Ulangi password baru"
-                                class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                            >
+                            <label class="block mb-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">Konfirmasi Password Baru</label>
+                            <div x-data="{ show: false }" class="relative">
+                                <input
+                                    :type="show ? 'text' : 'password'"
+                                    wire:model="newPassword_confirmation"
+                                    autocomplete="new-password"
+                                    placeholder="Ulangi password baru"
+                                    class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-4 pr-11 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                >
+                                <button
+                                    type="button"
+                                    @click="show = !show"
+                                    class="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition hover:text-brand-600 dark:hover:text-brand-400"
+                                    :aria-label="show ? 'Sembunyikan password' : 'Tampilkan password'"
+                                >
+                                    <i class="fa-solid" :class="show ? 'fa-eye-slash' : 'fa-eye'"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="flex items-start gap-2 rounded-xl bg-blue-50 p-3 text-[10px] leading-relaxed text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
                             <i class="mt-0.5 fa-solid fa-circle-info"></i>
-                            <span>
-                                Gunakan password yang berbeda dari password default dan mudah Anda ingat.
-                            </span>
+                            <span>Gunakan password yang berbeda dari password default dan mudah Anda ingat.</span>
                         </div>
 
                         <button
@@ -1998,7 +2006,6 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
                                 <i class="mr-1 fa-solid fa-shield-halved"></i>
                                 Simpan Password
                             </span>
-
                             <span wire:loading wire:target="updateDefaultPassword">
                                 <i class="mr-1 fa-solid fa-spinner animate-spin"></i>
                                 Menyimpan...
@@ -2011,6 +2018,7 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
     </template>
     <x-toast />
 </div>
+
 <script>
     document.addEventListener('change', async (event) => {
             const input = event.target;

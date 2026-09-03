@@ -79,6 +79,28 @@ class Sidebar extends Component
                     
                 ]
             ],
+            
+            [
+                'title' => 'Laporan',
+                'items' => [
+                    [
+                        'name' => 'Laporan',
+                        'icon' => 'ti ti-chart-pie',
+                        'activePattern' => 'admin.report',
+                        'roles' => ['admin'], 
+                        'subItems' => [
+                            [
+                                'name' => 'Laporan Peminjaman',
+                                'icon' => 'ti ti-chart-pie',
+                                'activePattern' => 'admin.booking-report',
+                                'route' => 'admin.booking-report',
+                                'roles' => ['admin'],
+                            ],
+                        ],
+                    ],
+                ]
+            ],
+
         ];
 
         // 2. Filter menu berdasarkan Role User

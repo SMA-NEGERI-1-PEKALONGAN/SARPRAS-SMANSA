@@ -108,7 +108,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Ruangan')] class extends Compone
         $this->validate([
             'kode_ruangan' => ['required', 'string', 'max:50', Rule::unique('rooms')->ignore($this->editingRoom?->id)],
             'nama_ruangan' => 'required|string|max:255',
-            'tipe' => 'required|in:Laboratorium,Aula,Ruang Rapat,Fasilitas Olahraga,Lainnya',
+            'tipe' => 'required|in:Kelas,Laboratorium,Aula,Multimedia,UKS,Perpustakaan,Ruang Khusus,Ruang Server,Ruang Server,Fasilitas Olahraga,Lainnya',
             'kapasitas' => 'nullable|integer|min:1',
             'fasilitas' => 'nullable|string',
             'status_tersedia' => 'boolean',
@@ -199,7 +199,17 @@ new #[Layout('layouts.app')] #[Title('Manajemen Ruangan')] class extends Compone
             }
 
             $header = fgetcsv($handle, 1000, $delimiter); 
-            $allowedTipe = ['Laboratorium', 'Aula', 'Ruang Rapat', 'Fasilitas Olahraga', 'Lainnya'];
+            $allowedTipe = ['Kelas',
+                            'Laboratorium',
+                            'Multimedia',
+                            'Aula',
+                            'UKS',
+                            'Perpustakaan',
+                            'Ruang Khusus',
+                            'Ruang Server',
+                            'Ruang Podcast',
+                            'Fasilitas Olahraga',
+                            'Lainnya',];
             $rowNum = 1; // Menghitung baris (1 = header)
 
             // Array penampung sementara untuk deteksi duplikat di dalam file CSV yang sama
@@ -342,9 +352,16 @@ new #[Layout('layouts.app')] #[Title('Manajemen Ruangan')] class extends Compone
                     <select wire:model.live="filterTipe"
                         class="px-3 py-2 text-xs font-bold border-none outline-none bg-gray-50 dark:bg-gray-800 rounded-xl focus:ring-indigo-500 dark:text-white">
                         <option value="">Semua Tipe</option>
+                        <option value="Kelas">Kelas</option>
                         <option value="Laboratorium">Laboratorium</option>
+                        <option value="Multimedia">Multimedia</option>
                         <option value="Aula">Aula</option>
                         <option value="Ruang Rapat">Ruang Rapat</option>
+                        <option value="UKS">UKS</option>
+                        <option value="Perpustakaan">Perpustakaan</option>
+                        <option value="Ruang Khusus">Ruang Khusus</option>
+                        <option value="Ruang Server">Ruang Server</option>
+                        <option value="Ruang Podcast">Ruang Podcast</option>
                         <option value="Fasilitas Olahraga">Fasilitas Olahraga</option>
                         <option value="Lainnya">Lainnya</option>
                     </select>
@@ -487,10 +504,17 @@ new #[Layout('layouts.app')] #[Title('Manajemen Ruangan')] class extends Compone
                                     Ruangan</label>
                                 <select wire:model="tipe"
                                     class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white">
-                                    <option value="">-- Pilih Tipe --</option>
+                                    <option value="">Semua Tipe</option>
+                                    <option value="Kelas">Kelas</option>
                                     <option value="Laboratorium">Laboratorium</option>
+                                    <option value="Multimedia">Multimedia</option>
                                     <option value="Aula">Aula</option>
                                     <option value="Ruang Rapat">Ruang Rapat</option>
+                                    <option value="UKS">UKS</option>
+                                    <option value="Perpustakaan">Perpustakaan</option>
+                                    <option value="Ruang Khusus">Ruang Khusus</option>
+                                    <option value="Ruang Server">Ruang Server</option>
+                                    <option value="Ruang Podcast">Ruang Podcast</option>
                                     <option value="Fasilitas Olahraga">Fasilitas Olahraga</option>
                                     <option value="Lainnya">Lainnya</option>
                                 </select>
@@ -615,8 +639,7 @@ new #[Layout('layouts.app')] #[Title('Manajemen Ruangan')] class extends Compone
                                         <strong>name</strong> wajib diisi.
                                     </li>
 
-                                    <li><span class="font-bold">tipe:</span> Laboratorium, Aula, Ruang Rapat, Fasilitas
-                                        Olahraga, Lainnya.</li>
+                                    <li><span class="font-bold">tipe:</span>Kelas, Laboratorium, Aula, Multimedia, UKS, Perpustakaan, Ruang Khusus, Ruang Server, Ruang Server, Fasilitas Olahraga, Lainnya.</li>
 
                                     <li><span class="font-bold">status_tersedia:</span> 1 atau TRUE (Tersedia), 0 atau
                                         FALSE (Tidak).</li>

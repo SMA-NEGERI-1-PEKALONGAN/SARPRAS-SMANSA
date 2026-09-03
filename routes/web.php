@@ -89,6 +89,9 @@ Route::prefix('admin')
         Volt::route('/item', 'pages::admin.item-management')
             ->name('admin.item');
 
-        Volt::route('/booking', 'pages::admin.booking-management')
+        Volt::route('/booking', 'pages::admin.borrowing-management')
             ->name('admin.booking');
+            
+        Volt::route('/booking-report', 'pages::admin.borrowing-report')
+            ->name('admin.booking-report');
     });
