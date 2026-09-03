@@ -325,17 +325,14 @@
                         <span class="flex-1">Pengaturan Akun</span>
                     </a>
 
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit"
-                            class="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-900/20">
-                            <span
-                                class="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-900/20">
-                                <i class="text-sm fa-solid fa-right-from-bracket"></i>
-                            </span>
-                            <span class="flex-1 text-left">Logout</span>
-                        </button>
-                    </form>
+                    <a href="{{ route('logout') }}" wire:navigate"
+                        class="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50dark:text-rose-400 dark:hover:bg-rose-900/20">
+                        <span
+                            class="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-900/20">
+                            <i class="text-sm fa-solid fa-right-from-bracket"></i>
+                        </span>
+                        <span class="flex-1 text-left">Logout</span>
+                    </a>
                 </div>
                 @endguest
             </nav>
