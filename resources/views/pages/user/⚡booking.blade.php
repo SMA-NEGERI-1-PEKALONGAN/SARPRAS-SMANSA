@@ -1089,7 +1089,7 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
 
             <div class="relative w-full sm:w-44">
                 <i class="absolute text-sm -translate-y-1/2 pointer-events-none left-3 top-1/2 fa-regular fa-calendar text-slate-400"></i>
-                <input type="date" wire:model.live="dateFilter" min="{{ now()->format('Y-m-d') }}" max="{{ now()->addWeek(2)->format('Y-m-d') }}" class="w-full py-2.5 pl-9 pr-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm md:w-full">
+                <input type="date" wire:model.live="dateFilter" min="{{ now()->format('Y-m-d') }}" max="{{ now()->addWeek(2)->format('Y-m-d') }}" class="w-full py-2.5 pl-9 pr-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm md:w-full" placeholder="Masukan tanggal peminjaman">
             </div>
 
             <div class="relative flex-1 w-full sm:w-64">
