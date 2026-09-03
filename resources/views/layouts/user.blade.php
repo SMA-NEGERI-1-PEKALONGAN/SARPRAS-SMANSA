@@ -783,30 +783,19 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         
     <script>
-         document.addEventListener('alpine:init', () => {
+        document.addEventListener('alpine:init', () => {
+            // --- Theme Store ---
             Alpine.store('theme', {
-
-                isDark:
-                    document.documentElement.classList.contains('dark'),
+                isDark: document.documentElement.classList.contains('dark'),
 
                 toggle() {
-
                     this.isDark = !this.isDark;
-
-                    localStorage.setItem(
-                        'theme',
-                        this.isDark ? 'dark' : 'light'
-                    );
-
-                    if (this.isDark) {
-                        document.documentElement.classList.add('dark');
-                    } else {
-                        document.documentElement.classList.remove('dark');
-                    }
+                    localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
+                    document.documentElement.classList.toggle('dark', this.isDark);
                 }
-
             });
 
+            // --- Push Notification Component ---
             Alpine.data('pushNotificationPermission', () => ({
                 showPermissionModal: false,
                 loading: false,
@@ -814,25 +803,10 @@
                 storageKey: 'sarpras-notification-prompt',
 
                 async init() {
-                    if (!@js(auth()->check())) {
-                        return;
-                    }
-
-                    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-                        return;
-                    }
-
-                    if (Notification.permission === 'granted') {
-                        return;
-                    }
-
-                    if (Notification.permission === 'denied') {
-                        return;
-                    }
-
-                    if (localStorage.getItem(this.storageKey) === 'dismissed') {
-                        return;
-                    }
+                    if (!@js(auth()->check())) return;
+                    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+                    if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
+                    if (localStorage.getItem(this.storageKey) === 'dismissed') return;
 
                     setTimeout(() => {
                         this.showPermissionModal = true;
@@ -858,7 +832,6 @@
                         }
 
                         const registration = await navigator.serviceWorker.ready;
-
                         const publicKey = @js(config('webpush.vapid.public_key') ?: env('VAPID_PUBLIC_KEY'));
 
                         if (!publicKey) {
@@ -898,7 +871,6 @@
 
                         localStorage.setItem(this.storageKey, 'enabled');
                         this.showPermissionModal = false;
-
                         window.dispatchEvent(new CustomEvent('push-notification-enabled'));
                     } catch (error) {
                         console.error('Push notification error:', error);
@@ -910,96 +882,42 @@
 
                 urlBase64ToUint8Array(base64String) {
                     const padding = '='.repeat((4 - base64String.length % 4) % 4);
-                    const base64 = (base64String + padding)
-                        .replace(/-/g, '+')
-                        .replace(/_/g, '/');
-
+                    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
                     const rawData = window.atob(base64);
                     return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
                 },
 
                 arrayBufferToBase64(buffer) {
-                    return btoa(
-                        String.fromCharCode(...new Uint8Array(buffer))
-                    );
+                    return btoa(String.fromCharCode(...new Uint8Array(buffer)));
                 }
             }));
         });
 
-        (() => {
-            if (window.__sarprasSWInitialized) {
-                return;
-            }
-
-            window.__sarprasSWInitialized = true;
-
-            window.__sarprasRegisterServiceWorker = async function () {
-                if (!('serviceWorker' in navigator)) {
-                    return null;
-                }
-
-                try {
-                    const registration =
-                        await navigator.serviceWorker.register('/sw.js', {
-                            scope: '/'
-                        });
-
-                    console.log(
-                        'Service Worker aktif:',
-                        registration.scope
-                    );
-
-                    return registration;
-                } catch (error) {
-                    console.error(
-                        'Service Worker gagal:',
-                        error
-                    );
-
-                    return null;
-                }
-            };
-
-            if (document.readyState === 'loading') {
-                document.addEventListener(
-                    'DOMContentLoaded',
-                    () => {
-                        window.__sarprasRegisterServiceWorker();
-                    },
-                    { once: true }
-                );
-            } else {
-                window.__sarprasRegisterServiceWorker();
-            }
-        })();
-
-        window.sarprasRegisterServiceWorker = async function () {
-            if (!('serviceWorker' in navigator)) {
-                return;
-            }
+        // --- Service Worker Registration ---
+        async function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) return null;
 
             try {
-                const registration = await navigator.serviceWorker.register('/sw.js', {
-                    scope: '/'
-                });
-
-                console.log(
-                    'Service Worker aktif:',
-                    registration.scope
-                );
-
+                const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                console.log('Service Worker aktif:', registration.scope);
                 return registration;
             } catch (error) {
-                console.error(
-                    'Service Worker gagal:',
-                    error
-                );
+                console.error('Service Worker gagal:', error);
+                return null;
             }
-        };
+        }
 
-        document.addEventListener('DOMContentLoaded', registerServiceWorker);
+        window.sarprasRegisterServiceWorker = registerServiceWorker;
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', registerServiceWorker, { once: true });
+        } else {
+            registerServiceWorker();
+        }
+
         document.addEventListener('livewire:navigated', registerServiceWorker);
 
+        // --- PWA Installation Logic ---
         if (!window.__sarprasPwaInitialized) {
             window.__sarprasPwaInitialized = true;
 
@@ -1010,28 +928,19 @@
                     window.addEventListener('beforeinstallprompt', event => {
                         event.preventDefault();
                         this.deferredPrompt = event;
-
-                        window.dispatchEvent(
-                            new CustomEvent('pwa-install-available')
-                        );
+                        window.dispatchEvent(new CustomEvent('pwa-install-available'));
                     });
 
                     window.addEventListener('appinstalled', () => {
                         this.deferredPrompt = null;
-
-                        window.dispatchEvent(
-                            new CustomEvent('pwa-installed')
-                        );
+                        window.dispatchEvent(new CustomEvent('pwa-installed'));
                     });
                 },
 
                 async install() {
-                    if (!this.deferredPrompt) {
-                        return;
-                    }
+                    if (!this.deferredPrompt) return;
 
                     const promptEvent = this.deferredPrompt;
-
                     this.deferredPrompt = null;
 
                     await promptEvent.prompt();
@@ -1042,19 +951,19 @@
             window.pwaInstall.init();
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            window.pwaInstall.init();
-        });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const standalone =
-                window.matchMedia('(display-mode: standalone)').matches ||
-                window.navigator.standalone === true;
-
+        // --- Check Standalone Display Mode ---
+        const checkStandalone = () => {
+            const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
             if (standalone) {
                 window.dispatchEvent(new CustomEvent('pwa-installed'));
             }
-        });
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkStandalone, { once: true });
+        } else {
+            checkStandalone();
+        }
     </script>
 </body>
 </html>

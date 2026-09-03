@@ -38,18 +38,6 @@ new
         ];
     }
 
-    public function testPush(): void
-    {
-        $user = auth()->user();
-
-        $user->notify(
-            new \App\Notifications\SystemPushNotification(
-                title: 'Test Notifikasi',
-                message: 'Push notification berhasil diterima.',
-                url: route('history')
-            )
-        );
-    }
 };
 
 ?>
@@ -545,13 +533,7 @@ new
                            text-blue-600 dark:text-blue-400 uppercase">
                     Pertanyaan Umum
                 </span>
-                <button
-        type="button"
-        wire:click="testPush"
-        class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white"
-    >
-        Test Push
-    </button>
+                
                 <h2 class="text-3xl font-extrabold
                            text-slate-900 dark:text-white">
                     Sering Ditanyakan
