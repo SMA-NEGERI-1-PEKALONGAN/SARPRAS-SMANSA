@@ -425,7 +425,7 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
             'form.rooms.*.fasilitas' => ['array'],
             'form.items.*.item_id' => ['required', 'integer', 'exists:items,id'],
             'form.items.*.jumlah' => ['required', 'integer', 'min:1'],
-            'file_lampiran' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:1024'],
+            'file_lampiran' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp,heic', 'max:1024'],
         ], [
             'form.waktu_selesai.after' => 'Waktu selesai harus lebih besar dari waktu mulai.',
             'file_lampiran.max' => 'Ukuran lampiran maksimal 1 MB.',
@@ -692,17 +692,101 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
         $facility = strtolower($facility);
 
         return match (true) {
-            str_contains($facility, 'ac') || str_contains($facility, 'pendingin') => 'fa-snowflake',
-            str_contains($facility, 'proyektor') || str_contains($facility, 'projector') => 'fa-video',
-            str_contains($facility, 'internet') || str_contains($facility, 'wifi') => 'fa-wifi',
-            str_contains($facility, 'tv') || str_contains($facility, 'smart') => 'fa-tv',
-            str_contains($facility, 'sound') || str_contains($facility, 'speaker') || str_contains($facility, 'audio') => 'fa-volume-high',
-            str_contains($facility, 'komputer') || str_contains($facility, 'pc') || str_contains($facility, 'laptop') => 'fa-computer',
-            str_contains($facility, 'kabel') || str_contains($facility, 'listrik') || str_contains($facility, 'plug') => 'fa-plug',
-            str_contains($facility, 'headset') || str_contains($facility, 'earphone') => 'fa-headset',
-            str_contains($facility, 'kamera') || str_contains($facility, 'camera') || str_contains($facility, 'video') => 'fa-camera',
-            str_contains($facility, 'meja') => 'fa-table',
-            str_contains($facility, 'kursi') => 'fa-chair',
+            // Pendingin ruangan
+            str_contains($facility, 'ac') ||
+            str_contains($facility, 'pendingin') ||
+            str_contains($facility, 'air conditioner')
+                => 'fa-snowflake',
+
+            // Proyektor / presentasi
+            str_contains($facility, 'proyektor') ||
+            str_contains($facility, 'projector')
+                => 'fa-video',
+
+            // Interactive Flat Panel / Smart Display
+            str_contains($facility, 'interactive flat panel') ||
+            str_contains($facility, 'smart display') ||
+            str_contains($facility, 'smart tv')
+                => 'fa-display',
+
+            // Komputer
+            str_contains($facility, 'komputer') ||
+            str_contains($facility, 'computer') ||
+            str_contains($facility, 'pc') ||
+            str_contains($facility, 'laptop')
+                => 'fa-computer',
+
+            // Internet / jaringan
+            str_contains($facility, 'internet') ||
+            str_contains($facility, 'wifi') ||
+            str_contains($facility, 'wi-fi')
+                => 'fa-wifi',
+
+            // Audio / sound system
+            str_contains($facility, 'sound system') ||
+            str_contains($facility, 'speaker') ||
+            str_contains($facility, 'audio') ||
+            str_contains($facility, 'microphone') ||
+            str_contains($facility, 'mikrofon')
+                => 'fa-volume-high',
+
+            // TV
+            str_contains($facility, 'tv') ||
+            str_contains($facility, 'televisi')
+                => 'fa-tv',
+
+            // Kamera
+            str_contains($facility, 'kamera') ||
+            str_contains($facility, 'camera') ||
+            str_contains($facility, 'video')
+                => 'fa-camera',
+
+            // Meja
+            str_contains($facility, 'meja')
+                => 'fa-table',
+
+            // Kursi
+            str_contains($facility, 'kursi')
+                => 'fa-chair',
+
+            // Alat praktikum
+            str_contains($facility, 'alat praktikum') ||
+            str_contains($facility, 'praktikum')
+                => 'fa-flask',
+
+            // Fasilitas kesehatan
+            str_contains($facility, 'alat kesehatan') ||
+            str_contains($facility, 'kesehatan') ||
+            str_contains($facility, 'p3k')
+                => 'fa-kit-medical',
+
+            // Lemari / penyimpanan
+            str_contains($facility, 'lemari') ||
+            str_contains($facility, 'rak') ||
+            str_contains($facility, 'penyimpanan')
+                => 'fa-box-archive',
+
+            // Sofa
+            str_contains($facility, 'sofa')
+                => 'fa-couch',
+
+            // Blower / kipas
+            str_contains($facility, 'blower') ||
+            str_contains($facility, 'kipas')
+                => 'fa-fan',
+
+            // Listrik
+            str_contains($facility, 'kabel') ||
+            str_contains($facility, 'listrik') ||
+            str_contains($facility, 'plug') ||
+            str_contains($facility, 'stop kontak')
+                => 'fa-plug',
+
+            // Headset
+            str_contains($facility, 'headset') ||
+            str_contains($facility, 'earphone')
+                => 'fa-headphones',
+
             default => 'fa-circle-check',
         };
     }
@@ -1498,7 +1582,8 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
 
                     <div class="p-4 border rounded-2xl border-slate-200 dark:border-slate-700" x-data="{ progress: 0, uploading: false }" x-on:livewire-upload-start.window="uploading=true; progress=0" x-on:livewire-upload-progress.window="progress=$event.detail.progress" x-on:livewire-upload-finish.window="uploading=false; progress=100" x-on:livewire-upload-error.window="uploading=false">
                         <label class="block mb-2 text-xs font-semibold">Lampiran (File SP) (Opsional) <span class="text-slate-400 font-normal">(PDF/JPG/JPEG/PNG/WebP, maksimal 1 MB)</span></label>
-                        <input type="file" wire:model="file_lampiran" accept=".pdf,.jpg,.jpeg,.png,.webp" class="w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:font-semibold file:text-brand-700 hover:file:bg-brand-100">
+                        <input type="file" data-compress-return wire:model="file_lampiran" accept=".pdf,.jpg,.jpeg,.png,.webp" class="w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:font-semibold file:text-brand-700 hover:file:bg-brand-100">
+                        
                         <div wire:loading wire:target="file_lampiran" class="flex items-center gap-2 mt-2 text-[10px] font-semibold text-brand-600"><i class="fa-solid fa-circle-notch animate-spin"></i> Menyiapkan file...</div>
                         @error('file_lampiran')<span class="block mt-1 text-[10px] text-rose-500">{{ $message }}</span>@enderror
 
@@ -1793,7 +1878,122 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
             </div>
         </div>
     </template>
-
-    
 </div>
+<script>
+    document.addEventListener('change', async (event) => {
+            const input = event.target;
+
+            // 1. Pastikan target sesuai dan ada file
+            if (!input.matches('[data-compress-return]') || !input.files?.length) return;
+
+            // 2. Mencegah Infinite Loop akibat dispatchEvent di akhir script
+            if (input.dataset.isCompressing === "true") return;
+
+            let file = input.files[0];
+            const fileName = file.name.toLowerCase();
+            
+            // Deteksi format HEIC (iPhone sering menganggapnya mimetype kosong atau application/octet-stream)
+            const isHeic = fileName.endsWith('.heic') || fileName.endsWith('.heif') || file.type === 'image/heic' || file.type === 'image/heif';
+
+            // Abaikan jika bukan HEIC dan juga bukan file gambar standar
+            if (!isHeic && (!file.type || !file.type.startsWith('image/'))) return;
+
+            // Jika gambar standar (bukan HEIC) dan ukurannya sudah di bawah 900KB, batalkan kompresi
+            if (!isHeic && file.size <= 900 * 1024) return;
+
+            try {
+                // Kunci input agar tidak memicu kompresi berulang
+                input.dataset.isCompressing = "true";
+
+                // 3. Konversi HEIC ke JPEG jika formatnya HEIC
+                if (isHeic) {
+                    if (typeof heic2any === 'undefined') {
+                        throw new Error("Library heic2any tidak ditemukan di halaman ini.");
+                    }
+                    
+                    // Proses konversi HEIC ke Blob JPEG
+                    const convertedBlob = await heic2any({
+                        blob: file,
+                        toType: "image/jpeg",
+                        quality: 0.85
+                    });
+                    
+                    // heic2any bisa mengembalikan array jika ada multiple frames, ambil yang pertama
+                    const finalBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+                    const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+                    
+                    // Ganti objek file original dengan file hasil konversi
+                    file = new File([finalBlob], newName, { type: 'image/jpeg' });
+
+                    // Jika hasil konversi HEIC ukurannya langsung di bawah 900KB, lewati proses canvas
+                    if (file.size <= 900 * 1024) {
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+                        input.files = dt.files;
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                        return; 
+                    }
+                }
+
+                // 4. Gunakan FileReader & Image untuk kompatibilitas maksimal di Safari iOS
+                const img = new Image();
+                const imageLoadPromise = new Promise((resolve, reject) => {
+                    img.onload = () => resolve(img);
+                    img.onerror = reject;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        img.src = e.target.result;
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file); // Membaca file (bisa jadi file original atau hasil konversi HEIC)
+                });
+
+                await imageLoadPromise;
+
+                const maxSide = 1600;
+                const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(img.width * scale));
+                canvas.height = Math.max(1, Math.round(img.height * scale));
+
+                // Gambar ke canvas
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // 5. Gunakan JPEG untuk hasil akhir
+                const mimeType = 'image/jpeg';
+                const fileExt = '.jpg';
+                let quality = 0.82;
+
+                let blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, quality));
+
+                // Lakukan reduksi kualitas jika masih di atas 900KB
+                while (blob && blob.size > 900 * 1024 && quality > 0.45) {
+                    quality -= 0.08;
+                    blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, quality));
+                }
+
+                if (!blob) throw new Error("Gagal membuat Blob dari Canvas.");
+
+                // Buat file baru
+                const compressedName = (file.name.replace(/\.[^.]+$/, '') || 'bukti') + fileExt;
+                const compressedFile = new File([blob], compressedName, { type: mimeType });
+
+                // Ganti file di input
+                const dt = new DataTransfer();
+                dt.items.add(compressedFile);
+                input.files = dt.files;
+
+                // Pancing event change agar UI/Form tahu ada update file
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+
+            } catch (e) {
+                console.warn('Kompresi gambar gagal.', e);
+            } finally {
+                // 6. Lepas kunci setelah semua proses selesai atau error
+                delete input.dataset.isCompressing;
+            }
+        });
+</script>
 

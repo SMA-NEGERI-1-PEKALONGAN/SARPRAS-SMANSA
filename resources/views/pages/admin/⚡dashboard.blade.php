@@ -210,57 +210,65 @@ new #[Layout('layouts.app')] #[Title('Dashboard Admin')] class extends Component
 
     {{-- Summary --}}
     <div class="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 xl:grid-cols-4 sm:mb-8">
-        <div class="group rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 to-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-amber-900/50 dark:from-amber-900/20 dark:to-slate-900">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <p class="text-xs font-semibold tracking-wide uppercase text-amber-700/80 dark:text-amber-300">Menunggu Proses</p>
-                    <p class="mt-2 text-3xl font-bold text-amber-700 dark:text-amber-300">{{ number_format($pendingCount) }}</p>
-                    <p class="mt-1 text-[11px] text-amber-700/70 dark:text-amber-300/70">Pengajuan perlu ditindaklanjuti</p>
-                </div>
-                <div class="flex items-center justify-center h-11 w-11 shrink-0 rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300">
-                    <i class="text-lg fa-solid fa-hourglass-half"></i>
+        <a href="{{ route('admin.booking') }}" class="group" wire:navigate>
+            <div class="group rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 to-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-amber-900/50 dark:from-amber-900/20 dark:to-slate-900">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-semibold tracking-wide uppercase text-amber-700/80 dark:text-amber-300">Menunggu Proses</p>
+                        <p class="mt-2 text-3xl font-bold text-amber-700 dark:text-amber-300">{{ number_format($pendingCount) }}</p>
+                        <p class="mt-1 text-[11px] text-amber-700/70 dark:text-amber-300/70">Pengajuan perlu ditindaklanjuti</p>
+                    </div>
+                    <div class="flex items-center justify-center h-11 w-11 shrink-0 rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300">
+                        <i class="text-lg fa-solid fa-hourglass-half"></i>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
 
-        <div class="group rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-50 to-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-blue-900/50 dark:from-blue-900/20 dark:to-slate-900">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <p class="text-xs font-semibold tracking-wide uppercase text-blue-700/80 dark:text-blue-300">Sedang Dipinjam</p>
-                    <p class="mt-2 text-3xl font-bold text-blue-700 dark:text-blue-300">{{ number_format($ongoingCount) }}</p>
-                    <p class="mt-1 text-[11px] text-blue-700/70 dark:text-blue-300/70">Peminjaman sedang berlangsung</p>
-                </div>
-                <div class="flex items-center justify-center text-blue-600 bg-blue-100 h-11 w-11 shrink-0 rounded-xl dark:bg-blue-900/40 dark:text-blue-300">
-                    <i class="text-lg fa-solid fa-box-open"></i>
+        <a href="{{ route('admin.booking') }}" class="group" wire:navigate>
+            <div class="group rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-50 to-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-blue-900/50 dark:from-blue-900/20 dark:to-slate-900">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-semibold tracking-wide uppercase text-blue-700/80 dark:text-blue-300">Sedang Dipinjam</p>
+                        <p class="mt-2 text-3xl font-bold text-blue-700 dark:text-blue-300">{{ number_format($ongoingCount) }}</p>
+                        <p class="mt-1 text-[11px] text-blue-700/70 dark:text-blue-300/70">Peminjaman sedang berlangsung</p>
+                    </div>
+                    <div class="flex items-center justify-center text-blue-600 bg-blue-100 h-11 w-11 shrink-0 rounded-xl dark:bg-blue-900/40 dark:text-blue-300">
+                        <i class="text-lg fa-solid fa-box-open"></i>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
 
-        <div class="group rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-emerald-900/50 dark:from-emerald-900/20 dark:to-slate-900">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <p class="text-xs font-semibold tracking-wide uppercase text-emerald-700/80 dark:text-emerald-300">Selesai Hari Ini</p>
-                    <p class="mt-2 text-3xl font-bold text-emerald-700 dark:text-emerald-300">{{ number_format($completedToday) }}</p>
-                    <p class="mt-1 text-[11px] text-emerald-700/70 dark:text-emerald-300/70">Dikembalikan / selesai</p>
-                </div>
-                <div class="flex items-center justify-center h-11 w-11 shrink-0 rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
-                    <i class="text-lg fa-solid fa-circle-check"></i>
+        <a href="{{ route('admin.booking') }}" class="group" wire:navigate>
+            <div class="group rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-emerald-900/50 dark:from-emerald-900/20 dark:to-slate-900">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-semibold tracking-wide uppercase text-emerald-700/80 dark:text-emerald-300">Selesai Hari Ini</p>
+                        <p class="mt-2 text-3xl font-bold text-emerald-700 dark:text-emerald-300">{{ number_format($completedToday) }}</p>
+                        <p class="mt-1 text-[11px] text-emerald-700/70 dark:text-emerald-300/70">Dikembalikan / selesai</p>
+                    </div>
+                    <div class="flex items-center justify-center h-11 w-11 shrink-0 rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
+                        <i class="text-lg fa-solid fa-circle-check"></i>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
 
-        <div class="group rounded-2xl border border-violet-200/80 bg-gradient-to-br from-violet-50 to-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-violet-900/50 dark:from-violet-900/20 dark:to-slate-900">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <p class="text-xs font-semibold tracking-wide uppercase text-violet-700/80 dark:text-violet-300">Total Bulan Ini</p>
-                    <p class="mt-2 text-3xl font-bold text-violet-700 dark:text-violet-300">{{ number_format($monthTotal) }}</p>
-                    <p class="mt-1 text-[11px] text-violet-700/70 dark:text-violet-300/70">Seluruh transaksi</p>
-                </div>
-                <div class="flex items-center justify-center h-11 w-11 shrink-0 rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300">
-                    <i class="text-lg fa-solid fa-chart-column"></i>
+        <a href="{{ route('admin.booking') }}" class="group" wire:navigate>
+            <div class="group rounded-2xl border border-violet-200/80 bg-gradient-to-br from-violet-50 to-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-violet-900/50 dark:from-violet-900/20 dark:to-slate-900">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-semibold tracking-wide uppercase text-violet-700/80 dark:text-violet-300">Total Bulan Ini</p>
+                        <p class="mt-2 text-3xl font-bold text-violet-700 dark:text-violet-300">{{ number_format($monthTotal) }}</p>
+                        <p class="mt-1 text-[11px] text-violet-700/70 dark:text-violet-300/70">Seluruh transaksi</p>
+                    </div>
+                    <div class="flex items-center justify-center h-11 w-11 shrink-0 rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300">
+                        <i class="text-lg fa-solid fa-chart-column"></i>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 
     {{-- Pending + Activities --}}

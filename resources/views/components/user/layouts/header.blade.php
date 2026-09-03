@@ -71,8 +71,9 @@
             <a href="{{ route('home') }}" wire:navigate class="group flex shrink-0 items-center gap-2.5"
                 aria-label="Beranda - SARPRAS SMANSA" @click="setActive('home')">
                 <div
-                    class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:shadow-lg">
-                    <i class="text-[17px] fa-solid fa-handshake"></i>
+                    class="flex h-10 w-10 items-center justify-center rounded-xl  text-white  transition-all duration-300 group-hover:-translate-y-0.5 group-hover:shadow-lg">
+                    {{-- <i class="text-[17px] fa-solid fa-handshake"></i> --}}
+                    <img src="{{ asset('img/logosmansa.png') }}" alt="Logo" class="h-10 w-10">
                 </div>
                 <span
                     class="text-[19px] font-bold tracking-tight text-slate-900 transition-colors duration-300 sm:text-[21px] dark:text-white">

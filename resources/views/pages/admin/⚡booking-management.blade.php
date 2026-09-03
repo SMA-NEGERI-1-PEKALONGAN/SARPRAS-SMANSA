@@ -186,17 +186,101 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
         $facility = strtolower($facility);
 
         return match (true) {
-            str_contains($facility, 'ac') || str_contains($facility, 'pendingin') => 'fa-snowflake',
-            str_contains($facility, 'proyektor') || str_contains($facility, 'projector') => 'fa-video',
-            str_contains($facility, 'internet') || str_contains($facility, 'wifi') => 'fa-wifi',
-            str_contains($facility, 'tv') || str_contains($facility, 'smart') => 'fa-tv',
-            str_contains($facility, 'sound') || str_contains($facility, 'speaker') || str_contains($facility, 'audio') => 'fa-volume-high',
-            str_contains($facility, 'komputer') || str_contains($facility, 'pc') || str_contains($facility, 'laptop') => 'fa-computer',
-            str_contains($facility, 'kabel') || str_contains($facility, 'listrik') || str_contains($facility, 'plug') => 'fa-plug',
-            str_contains($facility, 'headset') || str_contains($facility, 'earphone') => 'fa-headset',
-            str_contains($facility, 'kamera') || str_contains($facility, 'camera') || str_contains($facility, 'video') => 'fa-camera',
-            str_contains($facility, 'meja') => 'fa-table',
-            str_contains($facility, 'kursi') => 'fa-chair',
+            // Pendingin ruangan
+            str_contains($facility, 'ac') ||
+            str_contains($facility, 'pendingin') ||
+            str_contains($facility, 'air conditioner')
+                => 'fa-snowflake',
+
+            // Proyektor / presentasi
+            str_contains($facility, 'proyektor') ||
+            str_contains($facility, 'projector')
+                => 'fa-video',
+
+            // Interactive Flat Panel / Smart Display
+            str_contains($facility, 'interactive flat panel') ||
+            str_contains($facility, 'smart display') ||
+            str_contains($facility, 'smart tv')
+                => 'fa-display',
+
+            // Komputer
+            str_contains($facility, 'komputer') ||
+            str_contains($facility, 'computer') ||
+            str_contains($facility, 'pc') ||
+            str_contains($facility, 'laptop')
+                => 'fa-computer',
+
+            // Internet / jaringan
+            str_contains($facility, 'internet') ||
+            str_contains($facility, 'wifi') ||
+            str_contains($facility, 'wi-fi')
+                => 'fa-wifi',
+
+            // Audio / sound system
+            str_contains($facility, 'sound system') ||
+            str_contains($facility, 'speaker') ||
+            str_contains($facility, 'audio') ||
+            str_contains($facility, 'microphone') ||
+            str_contains($facility, 'mikrofon')
+                => 'fa-volume-high',
+
+            // TV
+            str_contains($facility, 'tv') ||
+            str_contains($facility, 'televisi')
+                => 'fa-tv',
+
+            // Kamera
+            str_contains($facility, 'kamera') ||
+            str_contains($facility, 'camera') ||
+            str_contains($facility, 'video')
+                => 'fa-camera',
+
+            // Meja
+            str_contains($facility, 'meja')
+                => 'fa-table',
+
+            // Kursi
+            str_contains($facility, 'kursi')
+                => 'fa-chair',
+
+            // Alat praktikum
+            str_contains($facility, 'alat praktikum') ||
+            str_contains($facility, 'praktikum')
+                => 'fa-flask',
+
+            // Fasilitas kesehatan
+            str_contains($facility, 'alat kesehatan') ||
+            str_contains($facility, 'kesehatan') ||
+            str_contains($facility, 'p3k')
+                => 'fa-kit-medical',
+
+            // Lemari / penyimpanan
+            str_contains($facility, 'lemari') ||
+            str_contains($facility, 'rak') ||
+            str_contains($facility, 'penyimpanan')
+                => 'fa-box-archive',
+
+            // Sofa
+            str_contains($facility, 'sofa')
+                => 'fa-couch',
+
+            // Blower / kipas
+            str_contains($facility, 'blower') ||
+            str_contains($facility, 'kipas')
+                => 'fa-fan',
+
+            // Listrik
+            str_contains($facility, 'kabel') ||
+            str_contains($facility, 'listrik') ||
+            str_contains($facility, 'plug') ||
+            str_contains($facility, 'stop kontak')
+                => 'fa-plug',
+
+            // Headset
+            str_contains($facility, 'headset') ||
+            str_contains($facility, 'earphone')
+                => 'fa-headphones',
+
             default => 'fa-circle-check',
         };
     }
@@ -292,6 +376,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
 
     public function reloadData(bool $notify = true): void
     {
+        $this->dispatch('borrowing-updated');
         $this->refreshOpenDetail();
     }
     
@@ -679,7 +764,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
         $isFollowUp = in_array($this->approvalCurrentStatus, ['Disetujui', 'Dipinjam'], true);
 
         if ($isFollowUp) {
-            $rules['returnUploads.*'] = ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:1024'];
+            $rules['returnUploads.*'] = ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp,heic', 'max:1024'];
         }
 
         $this->validate($rules, [
@@ -942,7 +1027,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
             'form.rooms.*.room_id' => ['required', 'exists:rooms,id'],
             'form.items.*.item_id' => ['required', 'exists:items,id'],
             'form.items.*.jumlah' => ['required', 'integer', 'min:1'],
-            'formFile' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:1024'],
+            'formFile' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp,heic', 'max:1024'],
         ], [
             'formFile.max' => 'Lampiran maksimal 1 MB.',
             'formFile.mimes' => 'Lampiran harus berupa PDF atau gambar.',
@@ -1090,12 +1175,12 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
             'editForm.status' => ['required', Rule::in($this->statusOptions)],
             'editForm.catatan' => ['nullable', 'string', 'max:2000'],
             'editForm.catatan_admin' => ['nullable', 'string', 'max:2000'],
-            'editFile' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:1024'],
+            'editFile' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp,heic', 'max:1024'],
             'editDetails.*.catatan' => ['nullable', 'string', 'max:2000'],
             'editDetails.*.catatan_pengembalian' => ['nullable', 'string', 'max:2000'],
             'editDetails.*.jumlah' => ['required', 'integer', 'min:1'],
             'editDetails.*.status' => ['required', Rule::in($this->statusOptions)],
-            'returnUploads.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:1024'],
+            'returnUploads.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp,heic', 'max:1024'],
         ], [
             'returnUploads.*.max' => 'Bukti pengembalian maksimal 1 MB.',
             'returnUploads.*.mimes' => 'Bukti pengembalian harus berupa PDF atau gambar.',
@@ -1185,14 +1270,36 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
         $mpdf = new Mpdf([
             'mode' => 'utf-8',
             'format' => 'A4',
-            'margin_top' => 20,
+            'margin_top' => 10,
             'margin_right' => 18,
-            'margin_bottom' => 20,
+            'margin_bottom' => 10,
             'margin_left' => 18,
             'tempDir' => $tempDir,
+             // Jarak header/footer
+            'margin_header' => 5,
+            'margin_footer' => 5,
         ]);
 
         $mpdf->SetTitle('Surat Persetujuan ' . $borrowing->kode_transaksi);
+        $mpdf->SetHTMLFooter('
+            <table width="100%" style="border-collapse: collapse;">
+                <tr>
+                    <td
+                        style="
+                            text-align:center;
+                            font-family:dejavusans;
+                            font-size:7.5pt;
+                            color:#000000;
+                            padding:0;
+                        "
+                    >
+                        Dokumen ini dibuat secara elektronik melalui Sistem Sarana dan Prasarana
+                        SMA Negeri 1 Pekalongan.
+                    </td>
+                </tr>
+            </table>
+        ');
+
         $mpdf->WriteHTML($html);
 
         $filename = 'Surat-Persetujuan-' . preg_replace('/[^A-Za-z0-9_-]/', '-', $borrowing->kode_transaksi) . '.pdf';
@@ -1517,19 +1624,17 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                                     </td>
                                     <td class="px-4 py-4 text-center">
                                         <div class="flex flex-wrap items-center justify-center gap-2">
-
                                             @if(in_array($booking->status, ['Menunggu', 'Disetujui'], true))
                                             <button wire:click="openApprovalModal({{ $booking->id }})"
                                                 class="px-3 py-2 text-[10px] font-bold text-white rounded-lg {{ $booking->status === 'Menunggu' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-600 hover:bg-slate-700' }}">
                                                 <i
                                                     class="mr-1 fa-solid {{ $booking->status === 'Menunggu' ? 'fa-gavel' : 'fa-pen-to-square' }}"></i>{{ $booking->status === 'Menunggu' ? 'Approve' : 'Tindak Lanjut' }}
                                             </button>
-                                            @else
+                                            @endif
                                             <button wire:click="openBorrowingDetailModal({{ $booking->id }})"
                                                 class="px-3 py-2 text-[10px] font-bold text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">
                                                 <i class="mr-1 fa-solid fa-eye"></i>Detail
                                             </button>
-                                            @endif
                                         </div>
                                     </td>
                                 </tr>
@@ -1944,7 +2049,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                                                     <td class="px-4 py-4"><textarea wire:model="approvalDetails.{{ $index }}.catatan" rows="2" {{ $approvalCurrentStatus !== 'Menunggu' ? 'readonly' : '' }} placeholder="Catatan item..." class="w-52 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] dark:border-slate-700 dark:bg-gray-800 dark:text-white"></textarea></td>
                                                     @if($approvalCurrentStatus !== 'Menunggu')
                                                     <td class="px-4 py-4"><textarea wire:model="approvalDetails.{{ $index }}.catatan_pengembalian" rows="2" placeholder="Catatan kondisi pengembalian..." class="w-52 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] dark:border-slate-700 dark:bg-gray-900 dark:text-white"></textarea></td>
-                                                    <td class="px-4 py-4"><input type="file" wire:model="returnUploads.{{ $index }}" accept="application/pdf,image/*" capture="environment" class="block w-52 text-[9px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-[9px] file:font-bold file:text-indigo-700"><div class="mt-1 text-[8px] text-slate-400">Opsional · maks. 1 MB</div>@if(!empty($detail['file_bukti_pengembalian']))<a href="{{ Storage::url($detail['file_bukti_pengembalian']) }}" target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-[9px] font-bold text-slate-600 dark:bg-gray-800 dark:text-slate-300"><i class="fa-solid fa-paperclip"></i>Bukti saat ini</a>@endif @error('returnUploads.'.$index)<span class="mt-1 block text-[9px] text-rose-500">{{ $message }}</span>@enderror</td>
+                                                    <td class="px-4 py-4"><input type="file" data-compress-return wire:model="returnUploads.{{ $index }}" accept="application/pdf,image/*" capture="environment" class="block w-52 text-[9px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-[9px] file:font-bold file:text-indigo-700"><div class="mt-1 text-[8px] text-slate-400">Opsional · maks. 1 MB</div>@if(!empty($detail['file_bukti_pengembalian']))<a href="{{ Storage::url($detail['file_bukti_pengembalian']) }}" target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-[9px] font-bold text-slate-600 dark:bg-gray-800 dark:text-slate-300"><i class="fa-solid fa-paperclip"></i>Bukti saat ini</a>@endif @error('returnUploads.'.$index)<span class="mt-1 block text-[9px] text-rose-500">{{ $message }}</span>@enderror</td>
                                                     @endif
                                                 </tr>
                                                 @empty<tr><td colspan="{{ $approvalCurrentStatus === 'Menunggu' ? 6 : 8 }}" class="px-4 py-10 text-center text-slate-400">Tidak ada rincian peminjaman.</td></tr>@endforelse
@@ -1976,7 +2081,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                                 </div>
                             </div>
                             @if($approvalCurrentStatus !== 'Menunggu')
-                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-gray-800 dark:bg-gray-800/60">
+                            <div class="mx-4 mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-gray-800 dark:bg-gray-800/60">
                                 <div class="text-[9px] font-extrabold uppercase tracking-wide text-slate-500">Catatan Peminjaman</div>
                                 <div class="mt-1 break-words text-xs leading-relaxed text-slate-600 dark:text-slate-300">{{ $catatan ?: '-' }}</div>
                             </div>
@@ -2015,7 +2120,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                                 </div>
                                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div><label class="mb-2 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500">Catatan Admin</label><textarea wire:model="editForm.catatan_admin" rows="4" class="w-full rounded-xl border-0 bg-slate-50 px-4 py-3 text-sm dark:bg-gray-800 dark:text-white" placeholder="Catatan untuk admin"></textarea></div>
-                                    <div><label class="mb-2 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500">File Lampiran</label><input type="file" wire:model="editFile" accept="application/pdf,image/jpeg,image/png,image/webp" class="block w-full text-[10px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-[10px] file:font-bold file:text-indigo-700"><div wire:loading wire:target="editFile" class="mt-1 text-[9px] text-indigo-600">Memproses file...</div>@if($editFile)<div class="mt-1 text-[9px] font-semibold text-emerald-600">{{ $editFile->getClientOriginalName() }}</div>@endif @error('editFile')<span class="mt-1 block text-[9px] text-rose-500">{{ $message }}</span>@enderror</div>
+                                    <div><label class="mb-2 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500">File Lampiran</label><input type="file" wire:model="editFile" data-compress-return accept="application/pdf,image/jpeg,image/png,image/webp" class="block w-full text-[10px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-[10px] file:font-bold file:text-indigo-700"><div wire:loading wire:target="editFile" class="mt-1 text-[9px] text-indigo-600">Memproses file...</div>@if($editFile)<div class="mt-1 text-[9px] font-semibold text-emerald-600">{{ $editFile->getClientOriginalName() }}</div>@endif @error('editFile')<span class="mt-1 block text-[9px] text-rose-500">{{ $message }}</span>@enderror</div>
                                 </div>
                                 <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-gray-800">
                                     <div class="border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-800"><div class="text-xs font-extrabold text-slate-700 dark:text-slate-200">Rincian Peminjaman</div><div class="mt-0.5 text-[9px] text-slate-400">Seluruh detail dapat disesuaikan.</div></div>
@@ -2032,7 +2137,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                                                     <td class="px-4 py-4"><select wire:model.live="editDetails.{{ $index }}.status" class="min-w-[145px] rounded-xl border px-3 py-2 text-[10px] font-bold {{ $this->statusSelectClasses($detail['status']) }}">@foreach($statusOptions as $status)<option value="{{ $status }}">{{ $status }}</option>@endforeach</select></td>
                                                     <td class="px-4 py-4"><textarea wire:model="editDetails.{{ $index }}.catatan" rows="3" placeholder="Catatan item..." class="w-56 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] dark:border-slate-700 dark:bg-gray-800 dark:text-white"></textarea></td>
                                                     <td class="px-4 py-4"><textarea wire:model="editDetails.{{ $index }}.catatan_pengembalian" rows="3" placeholder="Catatan kondisi pengembalian..." class="w-56 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] dark:border-slate-700 dark:bg-gray-900 dark:text-white"></textarea></td>
-                                                    <td class="px-4 py-4"><input type="file" wire:model="returnUploads.{{ $index }}" accept="application/pdf,image/*" capture="environment" class="block w-52 text-[9px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-[9px] file:font-bold file:text-indigo-700"><div class="mt-1 text-[8px] text-slate-400">Opsional · maks. 1 MB</div>@if(!empty($detail['file_bukti_pengembalian']))<a href="{{ Storage::url($detail['file_bukti_pengembalian']) }}" target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-[9px] font-bold text-slate-600 dark:bg-gray-800 dark:text-slate-300"><i class="fa-solid fa-paperclip"></i>Bukti saat ini</a>@endif @error('returnUploads.'.$index)<span class="mt-1 block text-[9px] text-rose-500">{{ $message }}</span>@enderror</td>
+                                                    <td class="px-4 py-4"><input type="file" data-compress-return wire:model="returnUploads.{{ $index }}" accept="application/pdf,image/*" capture="environment" class="block w-52 text-[9px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-[9px] file:font-bold file:text-indigo-700"><div class="mt-1 text-[8px] text-slate-400">Opsional · maks. 1 MB</div>@if(!empty($detail['file_bukti_pengembalian']))<a href="{{ Storage::url($detail['file_bukti_pengembalian']) }}" target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-[9px] font-bold text-slate-600 dark:bg-gray-800 dark:text-slate-300"><i class="fa-solid fa-paperclip"></i>Bukti saat ini</a>@endif @error('returnUploads.'.$index)<span class="mt-1 block text-[9px] text-rose-500">{{ $message }}</span>@enderror</td>
                                                 </tr>
                                                 @empty<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400">Tidak ada rincian peminjaman.</td></tr>@endforelse
                                             </tbody>
@@ -2050,7 +2155,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                                                 <div class="rounded-xl bg-slate-50 p-3 dark:bg-gray-800/70"><label class="mb-1.5 block text-[8px] font-extrabold uppercase text-slate-400">Fasilitas</label><div class="flex flex-wrap gap-1.5">@foreach($detail['available_fasilitas'] ?? [] as $facility)@php($selected=in_array($facility,$detail['fasilitas']??[],true))<label class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[8px] font-semibold {{ $selected ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-500' }}"><input type="checkbox" wire:model.live="editDetails.{{ $index }}.fasilitas" value="{{ $facility }}" class="h-3 w-3 rounded text-indigo-600"><i class="fa-solid {{ $this->facilityIcon($facility) }} text-[8px] text-indigo-500"></i>{{ $facility }}</label>@endforeach</div></div>
                                                 <div><label class="mb-1 block text-[8px] font-extrabold uppercase text-slate-400">Catatan Item</label><textarea wire:model="editDetails.{{ $index }}.catatan" rows="3" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[10px] dark:border-slate-700 dark:bg-gray-800 dark:text-white"></textarea></div>
                                                 <div><label class="mb-1 block text-[8px] font-extrabold uppercase text-slate-400">Catatan Pengembalian</label><textarea wire:model="editDetails.{{ $index }}.catatan_pengembalian" rows="3" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[10px] dark:border-slate-700 dark:bg-gray-900 dark:text-white"></textarea></div>
-                                                <div><label class="mb-1 block text-[8px] font-extrabold uppercase text-slate-400">Bukti Pengembalian</label><input type="file" wire:model="returnUploads.{{ $index }}" accept="application/pdf,image/*" capture="environment" class="block w-full text-[9px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2.5 file:font-bold file:text-indigo-700">@if(!empty($detail['file_bukti_pengembalian']))<a href="{{ Storage::url($detail['file_bukti_pengembalian']) }}" target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-[9px] font-bold text-slate-600 dark:bg-gray-800 dark:text-slate-300"><i class="fa-solid fa-paperclip"></i>Bukti saat ini</a>@endif @error('returnUploads.'.$index)<span class="mt-1 block text-[9px] text-rose-500">{{ $message }}</span>@enderror</div>
+                                                <div><label class="mb-1 block text-[8px] font-extrabold uppercase text-slate-400">Bukti Pengembalian</label><input type="file" wire:model="returnUploads.{{ $index }}" data-compress-return accept="application/pdf,image/*" capture="environment" class="block w-full text-[9px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2.5 file:font-bold file:text-indigo-700">@if(!empty($detail['file_bukti_pengembalian']))<a href="{{ Storage::url($detail['file_bukti_pengembalian']) }}" target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-[9px] font-bold text-slate-600 dark:bg-gray-800 dark:text-slate-300"><i class="fa-solid fa-paperclip"></i>Bukti saat ini</a>@endif @error('returnUploads.'.$index)<span class="mt-1 block text-[9px] text-rose-500">{{ $message }}</span>@enderror</div>
                                             </div>
                                         </details>
                                         @empty<div class="rounded-2xl border border-slate-200 p-8 text-center text-slate-400 dark:border-gray-800">Tidak ada rincian peminjaman.</div>@endforelse
@@ -2257,7 +2362,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                                         class="block mb-2 text-xs font-bold text-gray-700 dark:text-gray-300">Lampiran
                                         (File SP) (Opsional)</label>
                                     <input type="file" wire:model="formFile"
-                                        accept="application/pdf,image/jpeg,image/png,image/webp"
+                                        data-compress-return accept="application/pdf,image/jpeg,image/png,image/webp"
                                         class="block w-full text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-xs file:font-bold file:text-indigo-700 hover:file:bg-indigo-100">
                                     <div wire:loading wire:target="formFile"
                                         class="flex items-center gap-2 mt-2 text-xs font-medium text-indigo-600">
@@ -2299,4 +2404,122 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
         </template>
     </section>
     <x-toast />
+
+    <script >
+        document.addEventListener('change', async (event) => {
+            const input = event.target;
+
+            // 1. Pastikan target sesuai dan ada file
+            if (!input.matches('[data-compress-return]') || !input.files?.length) return;
+
+            // 2. Mencegah Infinite Loop akibat dispatchEvent di akhir script
+            if (input.dataset.isCompressing === "true") return;
+
+            let file = input.files[0];
+            const fileName = file.name.toLowerCase();
+            
+            // Deteksi format HEIC (iPhone sering menganggapnya mimetype kosong atau application/octet-stream)
+            const isHeic = fileName.endsWith('.heic') || fileName.endsWith('.heif') || file.type === 'image/heic' || file.type === 'image/heif';
+
+            // Abaikan jika bukan HEIC dan juga bukan file gambar standar
+            if (!isHeic && (!file.type || !file.type.startsWith('image/'))) return;
+
+            // Jika gambar standar (bukan HEIC) dan ukurannya sudah di bawah 900KB, batalkan kompresi
+            if (!isHeic && file.size <= 900 * 1024) return;
+
+            try {
+                // Kunci input agar tidak memicu kompresi berulang
+                input.dataset.isCompressing = "true";
+
+                // 3. Konversi HEIC ke JPEG jika formatnya HEIC
+                if (isHeic) {
+                    if (typeof heic2any === 'undefined') {
+                        throw new Error("Library heic2any tidak ditemukan di halaman ini.");
+                    }
+                    
+                    // Proses konversi HEIC ke Blob JPEG
+                    const convertedBlob = await heic2any({
+                        blob: file,
+                        toType: "image/jpeg",
+                        quality: 0.85
+                    });
+                    
+                    // heic2any bisa mengembalikan array jika ada multiple frames, ambil yang pertama
+                    const finalBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+                    const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+                    
+                    // Ganti objek file original dengan file hasil konversi
+                    file = new File([finalBlob], newName, { type: 'image/jpeg' });
+
+                    // Jika hasil konversi HEIC ukurannya langsung di bawah 900KB, lewati proses canvas
+                    if (file.size <= 900 * 1024) {
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+                        input.files = dt.files;
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                        return; 
+                    }
+                }
+
+                // 4. Gunakan FileReader & Image untuk kompatibilitas maksimal di Safari iOS
+                const img = new Image();
+                const imageLoadPromise = new Promise((resolve, reject) => {
+                    img.onload = () => resolve(img);
+                    img.onerror = reject;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        img.src = e.target.result;
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file); // Membaca file (bisa jadi file original atau hasil konversi HEIC)
+                });
+
+                await imageLoadPromise;
+
+                const maxSide = 1600;
+                const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(img.width * scale));
+                canvas.height = Math.max(1, Math.round(img.height * scale));
+
+                // Gambar ke canvas
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // 5. Gunakan JPEG untuk hasil akhir
+                const mimeType = 'image/jpeg';
+                const fileExt = '.jpg';
+                let quality = 0.82;
+
+                let blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, quality));
+
+                // Lakukan reduksi kualitas jika masih di atas 900KB
+                while (blob && blob.size > 900 * 1024 && quality > 0.45) {
+                    quality -= 0.08;
+                    blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, quality));
+                }
+
+                if (!blob) throw new Error("Gagal membuat Blob dari Canvas.");
+
+                // Buat file baru
+                const compressedName = (file.name.replace(/\.[^.]+$/, '') || 'bukti') + fileExt;
+                const compressedFile = new File([blob], compressedName, { type: mimeType });
+
+                // Ganti file di input
+                const dt = new DataTransfer();
+                dt.items.add(compressedFile);
+                input.files = dt.files;
+
+                // Pancing event change agar UI/Form tahu ada update file
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+
+            } catch (e) {
+                console.warn('Kompresi gambar gagal.', e);
+            } finally {
+                // 6. Lepas kunci setelah semua proses selesai atau error
+                delete input.dataset.isCompressing;
+            }
+        });
+    </script>
 </div>

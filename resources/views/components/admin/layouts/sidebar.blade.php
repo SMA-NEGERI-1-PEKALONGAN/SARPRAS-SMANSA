@@ -6,10 +6,6 @@
 
     $pendingBorrowingCount = Borrowing::query()
         ->where('status', 'Menunggu')
-        ->whereBetween('tanggal_mulai', [
-            now()->startOfDay(),
-            now()->addWeeks(4)->endOfDay(),
-        ])
         ->count();
 @endphp
 <aside id="sidebar"
@@ -135,20 +131,12 @@
                                                 {{ $item['name'] }}
                                             </span>
 
-                                            @if(
-                                                $pendingBorrowingCount > 0 &&
-                                                str_contains(strtolower($item['name']), 'peminjaman')
-                                            )
+                                            @if(str_contains(strtolower($item['name']), 'peminjaman'))
                                                 <span
-                                                    class="ml-auto min-w-[22px] h-5 px-1.5
-                                                        flex items-center justify-center
-                                                        rounded-full
-                                                        bg-rose-500
-                                                        text-white
-                                                        text-[9px]
-                                                        font-bold
-                                                        shadow-sm
-                                                        animate-pulse"
+                                                    data-pending-borrowing-badge
+                                                    class="{{ $pendingBorrowingCount > 0
+                                                        ? 'ml-auto min-w-[22px] h-5 px-1.5 flex items-center justify-center rounded-full bg-rose-500 text-white text-[9px] font-bold shadow-sm animate-pulse'
+                                                        : 'hidden' }}"
                                                     title="{{ $pendingBorrowingCount }} peminjaman belum diproses"
                                                 >
                                                     {{ $pendingBorrowingCount > 99 ? '99+' : $pendingBorrowingCount }}
@@ -283,4 +271,61 @@
         </div>
     </div>
 </aside>
+<script>
+document.addEventListener('livewire:init', () => {
+
+    async function refreshPendingBorrowingCount() {
+        try {
+            const response = await fetch(
+                '{{ route('admin.booking') }}',
+                {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin',
+                    cache: 'no-store'
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            const count = Number(data.count || 0);
+
+            document
+                .querySelectorAll('[data-pending-borrowing-badge]')
+                .forEach((badge) => {
+
+                    if (count <= 0) {
+                        badge.classList.add('hidden');
+                        return;
+                    }
+
+                    badge.classList.remove('hidden');
+
+                    badge.textContent =
+                        count > 99 ? '99+' : count;
+
+                    badge.title =
+                        `${count} peminjaman belum diproses`;
+                });
+
+        } catch (error) {
+            console.error(
+                'Gagal memperbarui badge peminjaman:',
+                error
+            );
+        }
+    }
+
+    // Ketika reloadData() dipanggil
+    Livewire.on('borrowing-updated', () => {
+        refreshPendingBorrowingCount();
+    });
+
+});
+</script>
 @endpersist
