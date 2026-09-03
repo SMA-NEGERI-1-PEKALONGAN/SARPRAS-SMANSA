@@ -926,57 +926,121 @@
             }));
         });
 
-        (() => { if (!('serviceWorker' in navigator)) { return; } if (window.__sarprasServiceWorkerRegistered) { return; } window.__sarprasServiceWorkerRegistered = true; window.addEventListener('load', async () => { try { const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' }); console.log( 'Service Worker aktif:', registration.scope ); } catch (error) { console.error( 'Service Worker gagal:', error ); window.__sarprasServiceWorkerRegistered = false; } }, { once: true }); })();
+        (() => {
+            if (window.__sarprasSWInitialized) {
+                return;
+            }
 
-        const registerServiceWorker = async () => {
+            window.__sarprasSWInitialized = true;
+
+            window.__sarprasRegisterServiceWorker = async function () {
+                if (!('serviceWorker' in navigator)) {
+                    return null;
+                }
+
+                try {
+                    const registration =
+                        await navigator.serviceWorker.register('/sw.js', {
+                            scope: '/'
+                        });
+
+                    console.log(
+                        'Service Worker aktif:',
+                        registration.scope
+                    );
+
+                    return registration;
+                } catch (error) {
+                    console.error(
+                        'Service Worker gagal:',
+                        error
+                    );
+
+                    return null;
+                }
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener(
+                    'DOMContentLoaded',
+                    () => {
+                        window.__sarprasRegisterServiceWorker();
+                    },
+                    { once: true }
+                );
+            } else {
+                window.__sarprasRegisterServiceWorker();
+            }
+        })();
+
+        window.sarprasRegisterServiceWorker = async function () {
             if (!('serviceWorker' in navigator)) {
                 return;
             }
 
             try {
-                const registration = await navigator.serviceWorker.register('/sw.js');
-                console.log('Service Worker aktif:', registration.scope);
+                const registration = await navigator.serviceWorker.register('/sw.js', {
+                    scope: '/'
+                });
+
+                console.log(
+                    'Service Worker aktif:',
+                    registration.scope
+                );
+
+                return registration;
             } catch (error) {
-                console.error('Service Worker gagal:', error);
+                console.error(
+                    'Service Worker gagal:',
+                    error
+                );
             }
         };
 
         document.addEventListener('DOMContentLoaded', registerServiceWorker);
         document.addEventListener('livewire:navigated', registerServiceWorker);
 
-        window.pwaInstall = {
-            deferredPrompt: null,
+        if (!window.__sarprasPwaInitialized) {
+            window.__sarprasPwaInitialized = true;
 
-            init() {
-                window.addEventListener('beforeinstallprompt', event => {
-                    event.preventDefault();
-                    this.deferredPrompt = event;
-                    window.dispatchEvent(new CustomEvent('pwa-install-available'));
-                });
+            window.pwaInstall = {
+                deferredPrompt: null,
 
-                window.addEventListener('appinstalled', () => {
+                init() {
+                    window.addEventListener('beforeinstallprompt', event => {
+                        event.preventDefault();
+                        this.deferredPrompt = event;
+
+                        window.dispatchEvent(
+                            new CustomEvent('pwa-install-available')
+                        );
+                    });
+
+                    window.addEventListener('appinstalled', () => {
+                        this.deferredPrompt = null;
+
+                        window.dispatchEvent(
+                            new CustomEvent('pwa-installed')
+                        );
+                    });
+                },
+
+                async install() {
+                    if (!this.deferredPrompt) {
+                        return;
+                    }
+
+                    const promptEvent = this.deferredPrompt;
+
                     this.deferredPrompt = null;
-                    window.dispatchEvent(new CustomEvent('pwa-installed'));
-                });
-            },
 
-            async install() {
-                if (!this.deferredPrompt) {
-                    return;
+                    await promptEvent.prompt();
+                    await promptEvent.userChoice;
                 }
+            };
 
-                const promptEvent = this.deferredPrompt;
-                this.deferredPrompt = null;
-
-                await promptEvent.prompt();
-
-                const result = await promptEvent.userChoice;
-
-                if (result.outcome === 'accepted') {
-                    window.dispatchEvent(new CustomEvent('pwa-installed'));
-                }
-            }
-        };
+            window.pwaInstall.init();
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             window.pwaInstall.init();
