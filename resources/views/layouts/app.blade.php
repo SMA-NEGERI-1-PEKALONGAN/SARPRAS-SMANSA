@@ -339,6 +339,36 @@
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker aktif:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('Service Worker gagal:', error);
+                    });
+            }
+        });
+
+        const registerServiceWorker = async () => {
+            if (!('serviceWorker' in navigator)) {
+                return;
+            }
+
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js');
+                console.log('Service Worker aktif:', registration.scope);
+            } catch (error) {
+                console.error('Service Worker gagal:', error);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', registerServiceWorker);
+        document.addEventListener('livewire:navigated', registerServiceWorker);
+    </script>
 </body>
 
 </html>

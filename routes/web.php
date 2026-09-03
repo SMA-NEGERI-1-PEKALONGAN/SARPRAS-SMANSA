@@ -31,6 +31,42 @@ Route::middleware('guest')->group(function () {
     Volt::route('/login', 'pages::auth.login')->name('login');
 });
 
+Route::middleware('auth')->group(function () {
+    Route::post('/push-subscriptions', function (\Illuminate\Http\Request $request) {
+        $request->validate([
+            'endpoint' => ['required', 'string'],
+            'publicKey' => ['required', 'string'],
+            'authToken' => ['required', 'string'],
+            'contentEncoding' => ['nullable', 'string'],
+        ]);
+
+        $user = $request->user();
+
+        $user->updatePushSubscription(
+            $request->endpoint,
+            $request->publicKey,
+            $request->authToken,
+            $request->contentEncoding ?? 'aes128gcm'
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notifikasi perangkat berhasil diaktifkan.',
+        ]);
+    })->name('push-subscriptions.store');
+
+    Route::delete('/push-subscriptions', function (\Illuminate\Http\Request $request) {
+        $request->validate([
+            'endpoint' => ['required', 'string'],
+        ]);
+
+        $request->user()->deletePushSubscription($request->endpoint);
+
+        return response()->json([
+            'success' => true,
+        ]);
+    })->name('push-subscriptions.destroy');
+});
 
 /*
 |--------------------------------------------------------------------------

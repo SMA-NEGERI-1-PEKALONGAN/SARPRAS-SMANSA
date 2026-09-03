@@ -9,6 +9,7 @@ use App\Models\Borrowing;
 use App\Models\BorrowingDetail;
 use App\Models\User;
 use App\Models\SystemNotification;
+use App\Helpers\NotificationHelper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
@@ -103,16 +104,21 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
                 $query->where('role', 'admin');
             })
             ->get(['id']);
-
-        foreach ($admins as $admin) {
-            SystemNotification::create([
-                'user_id' => $admin->id,
-                'title' => 'Peminjaman Dibatalkan',
-                'message' => "{$userName} membatalkan pengajuan peminjaman {$resourceName}. Transaksi {$borrowing->kode_transaksi} telah dibatalkan.",
-                'url' => route('admin.booking'),
-                'is_read' => false,
-            ]);
-        }
+            
+        NotificationHelper::sendToAdmins(
+            title: 'Peminjaman Dibatalkan',
+            message: "{$userName} membatalkan pengajuan peminjaman {$resourceName}. Transaksi {$borrowing->kode_transaksi} telah dibatalkan.",
+            url: route('admin.booking')
+        ); 
+        // foreach ($admins as $admin) {
+        //     SystemNotification::create([
+        //         'user_id' => $admin->id,
+        //         'title' => 'Peminjaman Dibatalkan',
+        //         'message' => "{$userName} membatalkan pengajuan peminjaman {$resourceName}. Transaksi {$borrowing->kode_transaksi} telah dibatalkan.",
+        //         'url' => route('admin.booking'),
+        //         'is_read' => false,
+        //     ]);
+        // }
     }
 
     protected function sendReturnNotification(Borrowing $borrowing): void
@@ -131,13 +137,20 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
             ? $resourceNames->implode(', ')
             : 'fasilitas';
 
-        SystemNotification::create([
-            'user_id' => $borrowing->approved_by,
-            'title' => 'Pengembalian Peminjaman',
-            'message' => "Pengembalian {$resourceName} oleh " . (auth()->user()?->name ?? 'User') . " telah diajukan untuk transaksi {$borrowing->kode_transaksi}. Silakan periksa pengembalian tersebut.",
-            'url' => route('admin.booking'),
-            'is_read' => false,
-        ]);
+        NotificationHelper::send(
+            userId: $borrowing->approved_by,
+            title: 'Pengembalian Peminjaman',
+            message: "Pengembalian {$resourceName} oleh " . (auth()->user()?->name ?? 'User') . " telah diajukan untuk transaksi {$borrowing->kode_transaksi}. Silakan periksa pengembalian tersebut.",
+            url: route('admin.booking')
+        );
+
+        // SystemNotification::create([
+        //     'user_id' => $borrowing->approved_by,
+        //     'title' => 'Pengembalian Peminjaman',
+        //     'message' => "Pengembalian {$resourceName} oleh " . (auth()->user()?->name ?? 'User') . " telah diajukan untuk transaksi {$borrowing->kode_transaksi}. Silakan periksa pengembalian tersebut.",
+        //     'url' => route('admin.booking'),
+        //     'is_read' => false,
+        // ]);
     }
     public function openDetail(int $id): void
     {

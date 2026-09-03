@@ -1,3 +1,17 @@
+@auth
+    @php
+        $notificationUnreadCount = \App\Models\SystemNotification::query()
+            ->where('user_id', auth()->id())
+            ->where('is_read', false)
+            ->count();
+
+        $notifications = \App\Models\SystemNotification::query()
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->limit(10)
+            ->get();
+    @endphp
+@endauth
 <!DOCTYPE html>
 <html
     lang="{{ str_replace('_', '-', app()->getLocale()) }}" wire:navigate 
@@ -17,6 +31,16 @@
     >
     {{-- icon --}}
     <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
+    
+    {{-- pusher notification --}}
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SARPRAS SMANSA">
+    <link rel="apple-touch-icon" href="{{ asset('img/icons/icon-192x192.png') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>
         {{ $title ?? 'SARPRAS SMANSA' }} |
@@ -400,6 +424,7 @@
     @stack('styles')
 </head>
 
+
 <body class="min-h-screen flex flex-col antialiased text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
     {{-- ===================================================== --}}
     {{-- Modern Responsive Navbar --}}
@@ -454,7 +479,22 @@
                         untuk efisiensi operasional dan pengelolaan
                         sarana prasarana modern.
                     </p>
-
+                    <div
+                        x-data="{ canInstall: false }"
+                        x-on:pwa-install-available.window="canInstall = true"
+                        x-on:pwa-installed.window="canInstall = false"
+                        x-show="canInstall"
+                        x-cloak
+                    >
+                        <button
+                            type="button"
+                            @click="window.pwaInstall.install()"
+                            class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-blue-700"
+                        >
+                            <i class="fa-solid fa-download"></i>
+                            Pasang Aplikasi
+                        </button>
+                    </div>
                 </div>
 
                 {{-- Navigation --}}
@@ -639,13 +679,111 @@
 
         </div>
     </footer>
+    {{-- pusher norification --}}
+    <div x-data="pushNotificationPermission()" x-init="init()" x-show="showPermissionModal" x-cloak @keydown.escape.window="showPermissionModal = false" class="fixed inset-0 z-[9998] flex items-center justify-center p-4">
+        <div
+            x-show="showPermissionModal"
+            x-transition.opacity
+            class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+        ></div>
 
-    {{-- ===================================================== --}}
-    {{-- Alpine Global Store --}}
-    {{-- ===================================================== --}}
+        <div
+            x-show="showPermissionModal"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+            x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+            class="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900"
+        >
+            <div class="p-6 sm:p-7">
+                <div class="flex items-center justify-center w-16 h-16 mx-auto rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                    <i class="text-2xl fa-solid fa-bell"></i>
+                </div>
+
+                <div class="mt-5 text-center">
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+                        Aktifkan Notifikasi
+                    </h2>
+
+                    <p class="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                        Dapatkan pemberitahuan langsung ketika pengajuan peminjaman Anda disetujui, ditolak, atau selesai diproses.
+                    </p>
+                </div>
+
+                <div class="mt-5 space-y-3">
+                    <div class="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800">
+                        <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+                            <i class="text-xs fa-solid fa-check"></i>
+                        </span>
+                        <div>
+                            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                Status peminjaman
+                            </p>
+                            <p class="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
+                                Anda akan mengetahui perubahan status tanpa harus membuka halaman riwayat.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800">
+                        <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                            <i class="text-xs fa-solid fa-mobile-screen-button"></i>
+                        </span>
+                        <div>
+                            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                Langsung ke perangkat
+                            </p>
+                            <p class="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
+                                Notifikasi dapat diterima di HP atau komputer yang telah diaktifkan.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-2 gap-2.5">
+                    <button
+                        type="button"
+                        @click="decline()"
+                        class="rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                    >
+                        Nanti
+                    </button>
+
+                    <button
+                        type="button"
+                        @click="enable()"
+                        :disabled="loading"
+                        class="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700 disabled:cursor-wait disabled:opacity-60"
+                    >
+                        <span x-show="!loading">
+                            <i class="mr-1 fa-solid fa-bell"></i>
+                            Aktifkan
+                        </span>
+                        <span x-show="loading">
+                            <i class="mr-1 fa-solid fa-spinner animate-spin"></i>
+                            Mengaktifkan...
+                        </span>
+                    </button>
+                </div>
+
+                <p
+                    x-show="message"
+                    x-text="message"
+                    class="mt-3 text-center text-[10px] font-medium text-rose-500"
+                ></p>
+            </div>
+        </div>
+    </div>
+    @livewireScripts
+
+    @stack('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        
     <script>
-        document.addEventListener('alpine:init', () => {
-
+         document.addEventListener('alpine:init', () => {
             Alpine.store('theme', {
 
                 isDark:
@@ -669,13 +807,190 @@
 
             });
 
+            Alpine.data('pushNotificationPermission', () => ({
+                showPermissionModal: false,
+                loading: false,
+                message: '',
+                storageKey: 'sarpras-notification-prompt',
+
+                async init() {
+                    if (!@js(auth()->check())) {
+                        return;
+                    }
+
+                    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+                        return;
+                    }
+
+                    if (Notification.permission === 'granted') {
+                        return;
+                    }
+
+                    if (Notification.permission === 'denied') {
+                        return;
+                    }
+
+                    if (localStorage.getItem(this.storageKey) === 'dismissed') {
+                        return;
+                    }
+
+                    setTimeout(() => {
+                        this.showPermissionModal = true;
+                    }, 1200);
+                },
+
+                decline() {
+                    localStorage.setItem(this.storageKey, 'dismissed');
+                    this.showPermissionModal = false;
+                },
+
+                async enable() {
+                    this.loading = true;
+                    this.message = '';
+
+                    try {
+                        const permission = await Notification.requestPermission();
+
+                        if (permission !== 'granted') {
+                            localStorage.setItem(this.storageKey, 'dismissed');
+                            this.showPermissionModal = false;
+                            return;
+                        }
+
+                        const registration = await navigator.serviceWorker.ready;
+
+                        const publicKey = @js(config('webpush.vapid.public_key') ?: env('VAPID_PUBLIC_KEY'));
+
+                        if (!publicKey) {
+                            throw new Error('VAPID public key belum dikonfigurasi.');
+                        }
+
+                        const subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: this.urlBase64ToUint8Array(publicKey)
+                        });
+
+                        const key = subscription.getKey('p256dh');
+                        const auth = subscription.getKey('auth');
+
+                        if (!key || !auth) {
+                            throw new Error('Subscription browser tidak lengkap.');
+                        }
+
+                        const response = await fetch('{{ route('push-subscriptions.store') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({
+                                endpoint: subscription.endpoint,
+                                publicKey: this.arrayBufferToBase64(key),
+                                authToken: this.arrayBufferToBase64(auth),
+                                contentEncoding: 'aes128gcm'
+                            })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Subscription gagal disimpan ke server.');
+                        }
+
+                        localStorage.setItem(this.storageKey, 'enabled');
+                        this.showPermissionModal = false;
+
+                        window.dispatchEvent(new CustomEvent('push-notification-enabled'));
+                    } catch (error) {
+                        console.error('Push notification error:', error);
+                        this.message = error.message || 'Notifikasi gagal diaktifkan.';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                urlBase64ToUint8Array(base64String) {
+                    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                    const base64 = (base64String + padding)
+                        .replace(/-/g, '+')
+                        .replace(/_/g, '/');
+
+                    const rawData = window.atob(base64);
+                    return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+                },
+
+                arrayBufferToBase64(buffer) {
+                    return btoa(
+                        String.fromCharCode(...new Uint8Array(buffer))
+                    );
+                }
+            }));
+        });
+
+        (() => { if (!('serviceWorker' in navigator)) { return; } if (window.__sarprasServiceWorkerRegistered) { return; } window.__sarprasServiceWorkerRegistered = true; window.addEventListener('load', async () => { try { const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' }); console.log( 'Service Worker aktif:', registration.scope ); } catch (error) { console.error( 'Service Worker gagal:', error ); window.__sarprasServiceWorkerRegistered = false; } }, { once: true }); })();
+
+        const registerServiceWorker = async () => {
+            if (!('serviceWorker' in navigator)) {
+                return;
+            }
+
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js');
+                console.log('Service Worker aktif:', registration.scope);
+            } catch (error) {
+                console.error('Service Worker gagal:', error);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', registerServiceWorker);
+        document.addEventListener('livewire:navigated', registerServiceWorker);
+
+        window.pwaInstall = {
+            deferredPrompt: null,
+
+            init() {
+                window.addEventListener('beforeinstallprompt', event => {
+                    event.preventDefault();
+                    this.deferredPrompt = event;
+                    window.dispatchEvent(new CustomEvent('pwa-install-available'));
+                });
+
+                window.addEventListener('appinstalled', () => {
+                    this.deferredPrompt = null;
+                    window.dispatchEvent(new CustomEvent('pwa-installed'));
+                });
+            },
+
+            async install() {
+                if (!this.deferredPrompt) {
+                    return;
+                }
+
+                const promptEvent = this.deferredPrompt;
+                this.deferredPrompt = null;
+
+                await promptEvent.prompt();
+
+                const result = await promptEvent.userChoice;
+
+                if (result.outcome === 'accepted') {
+                    window.dispatchEvent(new CustomEvent('pwa-installed'));
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.pwaInstall.init();
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const standalone =
+                window.matchMedia('(display-mode: standalone)').matches ||
+                window.navigator.standalone === true;
+
+            if (standalone) {
+                window.dispatchEvent(new CustomEvent('pwa-installed'));
+            }
         });
     </script>
-
-    @livewireScripts
-
-    @stack('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </body>
 </html>

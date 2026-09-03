@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Borrowing;
 use App\Models\BorrowingDetail;
 use App\Models\SystemNotification;
+use App\Helpers\NotificationHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -360,13 +361,19 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
             return;
         }
 
-        SystemNotification::create([
-            'user_id' => $borrowing->user_id,
-            'title' => $notification['title'],
-            'message' => $notification['message'],
-            'url' => $url,
-            'is_read' => false,
-        ]);
+        NotificationHelper::send(
+            userId: $borrowing->user_id,
+            title: $notification['title'],
+            message: $notification['message'],
+            url: $url
+        );
+        // SystemNotification::create([
+        //     'user_id' => $borrowing->user_id,
+        //     'title' => $notification['title'],
+        //     'message' => $notification['message'],
+        //     'url' => $url,
+        //     'is_read' => false,
+        // ]);
     }
 
     protected function activeStatuses(): array

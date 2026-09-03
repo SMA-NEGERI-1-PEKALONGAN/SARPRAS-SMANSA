@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Borrowing;
 use App\Models\BorrowingDetail;
 use App\Models\SystemNotification;
+use App\Helpers\NotificationHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -136,15 +137,20 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
             })
             ->get(['id']);
 
-        foreach ($admins as $admin) {
-            SystemNotification::create([
-                'user_id' => $admin->id,
-                'title' => 'Pengajuan Peminjaman Baru',
-                'message' => "{$userName} mengajukan peminjaman {$resourceName}. Silakan periksa dan proses pengajuan tersebut.",
-                'url' => $url,
-                'is_read' => false,
-            ]);
-        }
+        // foreach ($admins as $admin) {
+        //     SystemNotification::create([
+        //         'user_id' => $admin->id,
+        //         'title' => 'Pengajuan Peminjaman Baru',
+        //         'message' => "{$userName} mengajukan peminjaman {$resourceName}. Silakan periksa dan proses pengajuan tersebut.",
+        //         'url' => $url,
+        //         'is_read' => false,
+        //     ]);
+        // }
+        NotificationHelper::sendToAdmins(
+            title: 'Pengajuan Peminjaman Baru',
+            message: "{$userName} mengajukan peminjaman {$resourceName}. Silakan periksa dan proses pengajuan tersebut.",
+            url: route('admin.booking')
+        );
     }
 
     public function updatingSearch(): void
