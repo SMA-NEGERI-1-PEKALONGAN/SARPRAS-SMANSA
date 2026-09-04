@@ -17,6 +17,7 @@ new #[Layout('layouts::auth')] class extends Component
             return redirect()->route('admin.dashboard');
         }
     }
+    
     public function login()
     {
         $credentials = [
@@ -24,34 +25,54 @@ new #[Layout('layouts::auth')] class extends Component
             'password' => $this->password,
         ];
 
-        // Proses login
-        if (Auth::attempt($credentials, $this->remember)) {
-            // check use active atau tidak 
-            $user = User::where('username', $this->username)->first();
-            if ($user->status == 'non-active') {
-                Auth::logout();
-                $this->dispatch('toast', type: 'error', message: 'Akun Anda sedang dinonaktifkan!');
-                return;
-            }
-            $user = Auth::user();
-            
-            // Panggil Alpine Toast via Livewire Dispatch
-            $this->dispatch('toast', type: 'success', message: 'Login berhasil! Mengalihkan...');
-            
-            // Regenerate session untuk keamanan
-            session()->regenerate();
-            
-            // jika role admin
-            if ($user->role == 'admin') {
-                return redirect()->route('admin.dashboard');
-            }else{
-                return redirect()->route('booking');
-            }
+        config([
+            'session.lifetime' => 1440,
+            'session.expire_on_close' => false,
+        ]);
+
+        if ($this->remember) {
+            Auth::guard('web')->setRememberDuration(60 * 24 * 30);
         }
 
-        // Jika gagal
-        $this->dispatch('toast', type: 'error', message: 'Username atau kata sandi tidak valid!');
+        if (!Auth::attempt($credentials, $this->remember)) {
+            $this->dispatch(
+                'toast',
+                type: 'error',
+                message: 'Username atau kata sandi tidak valid!'
+            );
+
+            return;
+        }
+
+        $user = Auth::user();
+
+        if (!$user || $user->status === 'non-active' || $user->status === 0 || $user->status === false) {
+            Auth::logout();
+
+            $this->dispatch(
+                'toast',
+                type: 'error',
+                message: 'Akun Anda sedang dinonaktifkan!'
+            );
+
+            return;
+        }
+
+        session()->regenerate();
+
+        $this->dispatch(
+            'toast',
+            type: 'success',
+            message: 'Login berhasil! Mengalihkan...'
+        );
+
+        if ($user->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+
+        return redirect()->route('booking');
     }
+
 };
 ?>
 <main>

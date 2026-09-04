@@ -2116,10 +2116,109 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                         <div class="min-h-0 flex-1 overflow-y-auto scrollbar-hidden">
                             <div class="space-y-5 p-4 sm:p-6">
                                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div><label class="mb-2 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500">Peminjam</label><select wire:model="editForm.user_id" class="w-full rounded-xl border-0 bg-slate-50 px-4 py-3 text-sm dark:bg-gray-800 dark:text-white"><option value="">-- Pilih Peminjam --</option>@foreach($usersList as $user)<option value="{{ $user->id }}">{{ $user->name }} ({{ $user->role }})</option>@endforeach</select>@error('editForm.user_id')<span class="mt-1 block text-[9px] text-rose-500">{{ $message }}</span>@enderror</div>
-                                    <div><label class="mb-2 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500">Status Utama</label><select wire:model="editForm.status" class="w-full rounded-xl border-0 bg-slate-50 px-4 py-3 text-sm font-bold dark:bg-gray-800 dark:text-white {{ $this->statusSelectClasses($editForm['status']) }}">@foreach($statusOptions as $status)<option value="{{ $status }}">{{ $status }}</option>@endforeach</select>@error('editForm.status')<span class="mt-1 block text-[9px] text-rose-500">{{ $message }}</span>@enderror</div>
-                                    <div><label class="mb-2 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500">Mulai</label><input type="datetime-local" wire:model="editForm.tanggal_mulai" class="w-full rounded-xl border-0 bg-slate-50 px-4 py-3 text-sm dark:bg-gray-800 dark:text-white"></div>
-                                    <div><label class="mb-2 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500">Selesai</label><input type="datetime-local" wire:model="editForm.tanggal_selesai" class="w-full rounded-xl border-0 bg-slate-50 px-4 py-3 text-sm dark:bg-gray-800 dark:text-white"></div>
+                                    <div>
+                                        <label class="mb-2 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400">Peminjam
+                                        </label>
+                                        <div
+                                            wire:ignore
+                                            x-data
+                                            x-init="
+                                                const el = $($refs.editUserSelect).select2({
+                                                    placeholder: '-- Pilih Peminjam --',
+                                                    width: '100%',
+                                                    dropdownParent: $('body'),
+                                                    allowClear: true
+                                                });
+
+                                                el.on('change', function () {
+                                                    $wire.set('editForm.user_id', $(this).val() || '');
+                                                });
+
+                                                $watch('$wire.editForm.user_id', value => {
+                                                    if ((el.val() || '') !== (value || '')) {
+                                                        el.val(value || '').trigger('change.select2');
+                                                    }
+                                                });
+                                            "
+                                            class="w-full">
+                                            <select
+                                                x-ref="editUserSelect"
+                                                class="w-full text-sm border-0 rounded-xl bg-slate-50 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                                                <option value=""></option>
+
+                                                @foreach($usersList as $user)
+                                                    <option
+                                                        value="{{ $user->id }}"
+                                                        @selected(($editForm['user_id'] ?? '') == $user->id)
+                                                    >
+                                                        {{ $user->name }} ({{ $user->role }})
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        @error('editForm.user_id')
+                                            <span class="mt-1 block text-[9px] font-medium text-rose-500">
+                                                {{ $message }}
+                                            </span>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="mb-2 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                            Status Utama
+                                        </label>
+
+                                        <select
+                                            wire:model="editForm.status"
+                                            class="w-full rounded-xl border-0 bg-slate-50 px-4 py-3 text-sm font-bold dark:bg-gray-800 dark:text-white {{ $this->statusSelectClasses($editForm['status'] ?? '') }}">
+                                            @foreach($statusOptions as $status)
+                                                <option value="{{ $status }}">
+                                                    {{ $status }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+
+                                        @error('editForm.status')
+                                            <span class="mt-1 block text-[9px] font-medium text-rose-500">
+                                                {{ $message }}
+                                            </span>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="mb-2 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                            Mulai
+                                        </label>
+
+                                        <input
+                                            type="datetime-local"
+                                            wire:model="editForm.tanggal_mulai"
+                                            class="w-full rounded-xl border-0 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500">
+
+                                        @error('editForm.tanggal_mulai')
+                                            <span class="mt-1 block text-[9px] font-medium text-rose-500">
+                                                {{ $message }}
+                                            </span>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="mb-2 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                            Selesai
+                                        </label>
+
+                                        <input
+                                            type="datetime-local"
+                                            wire:model="editForm.tanggal_selesai"
+                                            class="w-full rounded-xl border-0 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500">
+
+                                        @error('editForm.tanggal_selesai')
+                                            <span class="mt-1 block text-[9px] font-medium text-rose-500">
+                                                {{ $message }}
+                                            </span>
+                                        @enderror
+                                    </div>
                                 </div>
                                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div><label class="mb-2 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500">Tujuan / Keperluan</label><textarea wire:model="editForm.tujuan" rows="4" class="w-full rounded-xl border-0 bg-slate-50 px-4 py-3 text-sm dark:bg-gray-800 dark:text-white" placeholder="Tujuan / Keperluan"></textarea></div>
