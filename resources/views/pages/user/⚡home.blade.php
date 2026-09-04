@@ -37,20 +37,8 @@ new
             'availableRooms' => Room::where('status_tersedia', true)->count(),
         ];
     }
+    
 
-    public function testPush(): void
-    {
-        $user = auth()->user();
-
-        $user->notify(
-            new \App\Notifications\SystemPushNotification(
-
-                title: 'Test Notifikasi',
-                message: 'Push notification berhasil diterima.',
-                url: route('history')
-            )
-        );
-    }
 };
 
 ?>
@@ -226,7 +214,7 @@ new
                             <div x-data="roomScroller()" x-init="init()" class="relative mt-5">
                                 <div class="absolute top-0 left-0 right-0 z-10 h-8 bg-gradient-to-b from-white dark:from-slate-800 to-transparent pointer-events-none"></div>
 
-                                <div x-ref="roomContainer" @mouseenter="pause()" @mouseleave="resume()" @touchstart="pause()" @touchend="resumeDelayed()" @wheel="pause()" class="space-y-4 room-scroll max-h-[390px] overflow-y-auto pr-1 scroll-smooth overscroll-contain scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600" style="scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent;">
+                                <div  x-ref="roomContainer" @mouseenter="pause()" @mouseleave="resume()" @touchstart="pause()" @touchend="resumeDelayed()" @wheel="pause()" class="space-y-4 room-scroll max-h-[390px] overflow-y-auto pr-1 scroll-smooth overscroll-contain scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600" style="scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent;">
                                     
                                     @forelse($rooms as $room)
                                         @php
@@ -546,13 +534,6 @@ new
                            text-blue-600 dark:text-blue-400 uppercase">
                     Pertanyaan Umum
                 </span>
-                <button
-        type="button"
-        wire:click="testPush"
-        class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white"
-    >
-        Test Push
-    </button>
                 <h2 class="text-3xl font-extrabold
                            text-slate-900 dark:text-white">
                     Sering Ditanyakan
@@ -629,170 +610,154 @@ new
             </div>
 
         </div>
-
     </section>
-
 </div>
 @script
 <script>
-    Alpine.data('roomScroller', () => ({
-        interval: null,
-        isPaused: false,
-        isAtBottom: false,
+    if (!window.__roomScrollerRegistered) {
+        window.__roomScrollerRegistered = true;
 
-        init() {
-            const container = this.$refs.roomContainer;
+        Alpine.data('roomScroller', () => ({
+            interval: null,
+            resumeTimer: null,
+            isPaused: false,
+            isAtBottom: false,
 
-            if (!container) {
-                return;
-            }
+            init() {
+                const container = this.$refs.roomContainer;
 
-            /*
-            |--------------------------------------------------------------------------
-            | Tidak perlu auto-scroll jika konten tidak melebihi container
-            |--------------------------------------------------------------------------
-            */
-            if (container.scrollHeight <= container.clientHeight) {
-                return;
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Pause saat mouse berada di area scroll
-            |--------------------------------------------------------------------------
-            */
-            container.addEventListener('mouseenter', () => {
-                this.isPaused = true;
-            });
-
-            /*
-            |--------------------------------------------------------------------------
-            | Lanjut kembali saat mouse keluar
-            |--------------------------------------------------------------------------
-            | Jika sudah mencapai bawah, tidak akan dilanjutkan.
-            |--------------------------------------------------------------------------
-            */
-            container.addEventListener('mouseleave', () => {
-                if (!this.isAtBottom) {
-                    this.isPaused = false;
+                if (!container) {
+                    return;
                 }
-            });
 
-            /*
-            |--------------------------------------------------------------------------
-            | Pause saat touch
-            |--------------------------------------------------------------------------
-            */
-            container.addEventListener(
-                'touchstart',
-                () => {
-                    this.isPaused = true;
-                }, {
-                    passive: true
+                if (container.scrollHeight <= container.clientHeight) {
+                    return;
                 }
-            );
 
-            /*
-            |--------------------------------------------------------------------------
-            | Setelah touch selesai
-            |--------------------------------------------------------------------------
-            */
-            container.addEventListener(
-                'touchend',
-                () => {
-                    setTimeout(() => {
-                        if (!this.isAtBottom) {
-                            this.isPaused = false;
+                container.addEventListener('mouseenter', () => {
+                    this.pause();
+                });
+
+                container.addEventListener('mouseleave', () => {
+                    this.resume();
+                });
+
+                container.addEventListener(
+                    'touchstart',
+                    () => {
+                        this.pause();
+                    },
+                    { passive: true }
+                );
+
+                container.addEventListener(
+                    'touchend',
+                    () => {
+                        this.resumeDelayed();
+                    },
+                    { passive: true }
+                );
+
+                container.addEventListener(
+                    'wheel',
+                    () => {
+                        this.pause();
+                    },
+                    { passive: true }
+                );
+
+                container.addEventListener(
+                    'scroll',
+                    () => {
+                        const maxScroll =
+                            container.scrollHeight -
+                            container.clientHeight;
+
+                        if (
+                            maxScroll <= 0 ||
+                            container.scrollTop >= maxScroll - 2
+                        ) {
+                            this.isAtBottom = true;
+                            this.isPaused = true;
+                            this.stopAutoScroll();
                         }
-                    }, 1500);
-                }, {
-                    passive: true
-                }
-            );
+                    },
+                    { passive: true }
+                );
 
-            /*
-            |--------------------------------------------------------------------------
-            | Cek ketika user melakukan scroll manual
-            |--------------------------------------------------------------------------
-            */
-            container.addEventListener(
-                'scroll',
-                () => {
+                this.startAutoScroll();
+            },
+
+            startAutoScroll() {
+                const container = this.$refs.roomContainer;
+
+                if (!container || this.interval) {
+                    return;
+                }
+
+                this.interval = setInterval(() => {
+                    if (
+                        this.isPaused ||
+                        this.isAtBottom ||
+                        !this.$refs.roomContainer
+                    ) {
+                        return;
+                    }
+
                     const maxScroll =
                         container.scrollHeight -
                         container.clientHeight;
 
-                    /*
-                    | Jika sudah mencapai paling bawah,
-                    | hentikan auto-scroll.
-                    */
-                    if (
-                        maxScroll <= 0 ||
-                        container.scrollTop >= maxScroll - 2
-                    ) {
+                    if (container.scrollTop >= maxScroll - 2) {
+                        container.scrollTop = maxScroll;
                         this.isAtBottom = true;
                         this.isPaused = true;
-
                         this.stopAutoScroll();
+                        return;
                     }
-                }, {
-                    passive: true
-                }
-            );
 
-            /*
-            |--------------------------------------------------------------------------
-            | Auto Scroll
-            |--------------------------------------------------------------------------
-            */
-            this.interval = setInterval(() => {
+                    container.scrollTop += 0.5;
+                }, 40);
+            },
 
-                if (this.isPaused || this.isAtBottom) {
+            pause() {
+                this.isPaused = true;
+            },
+
+            resume() {
+                if (this.isAtBottom) {
                     return;
                 }
 
-                const maxScroll =
-                    container.scrollHeight -
-                    container.clientHeight;
+                this.isPaused = false;
+            },
 
-                /*
-                |--------------------------------------------------------------------------
-                | Jika sudah di bawah
-                |--------------------------------------------------------------------------
-                */
-                if (container.scrollTop >= maxScroll - 2) {
+            resumeDelayed() {
+                clearTimeout(this.resumeTimer);
 
-                    container.scrollTop = maxScroll;
+                this.resumeTimer = setTimeout(() => {
+                    if (!this.isAtBottom) {
+                        this.isPaused = false;
+                    }
+                }, 1500);
+            },
 
-                    this.isAtBottom = true;
-                    this.isPaused = true;
-
-                    this.stopAutoScroll();
-
+            stopAutoScroll() {
+                if (!this.interval) {
                     return;
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Scroll perlahan ke bawah
-                |--------------------------------------------------------------------------
-                */
-                container.scrollTop += 0.5;
-
-            }, 40);
-        },
-
-        stopAutoScroll() {
-            if (this.interval) {
                 clearInterval(this.interval);
                 this.interval = null;
+            },
+
+            destroy() {
+                this.stopAutoScroll();
+
+                clearTimeout(this.resumeTimer);
             }
-        },
-
-        destroy() {
-            this.stopAutoScroll();
-        }
-    }));
-
+        }));
+    }
 </script>
 @endscript
+

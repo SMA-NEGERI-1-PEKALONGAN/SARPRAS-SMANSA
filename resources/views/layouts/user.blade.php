@@ -679,8 +679,9 @@
 
         </div>
     </footer>
+    
     {{-- pusher norification --}}
-    <div x-data="pushNotificationPermission()" x-init="init()" x-show="showPermissionModal" x-cloak @keydown.escape.window="showPermissionModal = false" class="fixed inset-0 z-[9998] flex items-center justify-center p-4">
+    <div x-data="pushNotificationPermission()" x-init="init()" x-show="showPermissionModal" x-cloak @keydown.escape.window="showPermissionModal = false" class="fixed inset-0 z-[9998] flex items-center justify-center p-3 sm:p-4">
         <div
             x-show="showPermissionModal"
             x-transition.opacity
@@ -695,267 +696,315 @@
             x-transition:leave="transition ease-in duration-200"
             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
             x-transition:leave-end="opacity-0 translate-y-4 scale-95"
-            class="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900"
+            class="relative flex w-full max-w-md max-h-[calc(100dvh-1.5rem)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900 sm:max-h-[calc(100dvh-2rem)] sm:rounded-3xl"
         >
-            <div class="p-6 sm:p-7">
-                <div class="flex items-center justify-center w-16 h-16 mx-auto rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
-                    <i class="text-2xl fa-solid fa-bell"></i>
-                </div>
+            <div class="overflow-y-auto overscroll-contain">
+                <div class="p-4 sm:p-6 md:p-7">
 
-                <div class="mt-5 text-center">
-                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">
-                        Aktifkan Notifikasi
-                    </h2>
-
-                    <p class="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                        Dapatkan pemberitahuan langsung ketika pengajuan peminjaman Anda disetujui, ditolak, atau selesai diproses.
-                    </p>
-                </div>
-
-                <div class="mt-5 space-y-3">
-                    <div class="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800">
-                        <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
-                            <i class="text-xs fa-solid fa-check"></i>
-                        </span>
-                        <div>
-                            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                Status peminjaman
-                            </p>
-                            <p class="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
-                                Anda akan mengetahui perubahan status tanpa harus membuka halaman riwayat.
-                            </p>
-                        </div>
+                    <div class="flex h-14 w-14 items-center justify-center mx-auto rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 sm:h-16 sm:w-16">
+                        <i class="text-xl sm:text-2xl fa-solid fa-bell"></i>
                     </div>
 
-                    <div class="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800">
-                        <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
-                            <i class="text-xs fa-solid fa-mobile-screen-button"></i>
-                        </span>
-                        <div>
-                            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                Langsung ke perangkat
-                            </p>
-                            <p class="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
-                                Notifikasi dapat diterima di HP atau komputer yang telah diaktifkan.
-                            </p>
-                        </div>
+                    <div class="mt-4 text-center sm:mt-5">
+                        <h2 class="text-lg font-bold leading-tight text-slate-900 dark:text-white sm:text-xl">
+                            Aktifkan Notifikasi
+                        </h2>
+
+                        <p class="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-slate-500 dark:text-slate-400 sm:text-sm">
+                            Dapatkan pemberitahuan langsung ketika pengajuan peminjaman Anda disetujui, ditolak, atau selesai diproses.
+                        </p>
                     </div>
-                </div>
 
-                <div class="mt-6 grid grid-cols-2 gap-2.5">
-                    <button
-                        type="button"
-                        @click="decline()"
-                        class="rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                    <div class="mt-5 space-y-2.5 sm:mt-6 sm:space-y-3">
+
+                        <div class="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800 sm:rounded-2xl sm:p-3.5">
+                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 sm:h-9 sm:w-9 sm:rounded-xl">
+                                <i class="text-[11px] fa-solid fa-check"></i>
+                            </div>
+
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[11px] font-bold leading-tight text-slate-800 dark:text-slate-200 sm:text-xs">
+                                    Status peminjaman
+                                </p>
+
+                                <p class="mt-1 text-[9px] leading-relaxed text-slate-500 dark:text-slate-400 sm:text-[10px]">
+                                    Anda akan mengetahui perubahan status tanpa harus membuka halaman riwayat.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800 sm:rounded-2xl sm:p-3.5">
+                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 sm:h-9 sm:w-9 sm:rounded-xl">
+                                <i class="text-[11px] fa-solid fa-mobile-screen-button"></i>
+                            </div>
+
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[11px] font-bold leading-tight text-slate-800 dark:text-slate-200 sm:text-xs">
+                                    Langsung ke perangkat
+                                </p>
+
+                                <p class="mt-1 text-[9px] leading-relaxed text-slate-500 dark:text-slate-400 sm:text-[10px]">
+                                    Notifikasi dapat diterima di HP atau komputer yang telah diaktifkan.
+                                </p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="mt-5 grid grid-cols-1 gap-2.5 sm:mt-6 sm:grid-cols-2">
+
+                        <button
+                            type="button"
+                            @click="decline()"
+                            class="flex min-h-[44px] items-center justify-center rounded-xl bg-slate-100 px-4 py-3 text-xs font-bold text-slate-600 transition hover:bg-slate-200 active:scale-[0.98] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 sm:text-sm"
+                        >
+                            Nanti
+                        </button>
+
+                        <button
+                            type="button"
+                            @click="enable()"
+                            :disabled="loading"
+                            class="flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-xs font-bold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60 sm:text-sm"
+                        >
+                            <span
+                                x-show="!loading"
+                                class="inline-flex items-center justify-center gap-1.5"
+                            >
+                                <i class="text-[11px] fa-solid fa-bell"></i>
+                                <span>Aktifkan</span>
+                            </span>
+
+                            <span
+                                x-show="loading"
+                                class="inline-flex items-center justify-center gap-1.5"
+                            >
+                                <i class="text-[11px] fa-solid fa-spinner animate-spin"></i>
+                                <span>Mengaktifkan...</span>
+                            </span>
+                        </button>
+
+                    </div>
+
+                    <div
+                        x-show="message"
+                        x-transition
+                        class="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-center text-[9px] font-medium leading-relaxed text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 sm:text-[10px]"
                     >
-                        Nanti
-                    </button>
+                        <span x-text="message"></span>
+                    </div>
 
-                    <button
-                        type="button"
-                        @click="enable()"
-                        :disabled="loading"
-                        class="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700 disabled:cursor-wait disabled:opacity-60"
-                    >
-                        <span x-show="!loading">
-                            <i class="mr-1 fa-solid fa-bell"></i>
-                            Aktifkan
-                        </span>
-                        <span x-show="loading">
-                            <i class="mr-1 fa-solid fa-spinner animate-spin"></i>
-                            Mengaktifkan...
-                        </span>
-                    </button>
+                    <div class="mt-4 text-center">
+                        <p class="text-[8px] leading-relaxed text-slate-400 sm:text-[9px]">
+                            Anda dapat mengubah izin notifikasi kapan saja melalui pengaturan browser.
+                        </p>
+                    </div>
+
                 </div>
-
-                <p
-                    x-show="message"
-                    x-text="message"
-                    class="mt-3 text-center text-[10px] font-medium text-rose-500"
-                ></p>
             </div>
         </div>
     </div>
+
+    {{-- iphone modal --}}
     @livewireScripts
 
     @stack('scripts')
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         
-    <script>
-        document.addEventListener('alpine:init', () => {
-            // --- Theme Store ---
-            Alpine.store('theme', {
-                isDark: document.documentElement.classList.contains('dark'),
+    <script data-navigate-once>
+    document.addEventListener('alpine:init', () => {
+        // --- Theme Store ---
+        Alpine.store('theme', {
+            isDark: document.documentElement.classList.contains('dark'),
 
-                toggle() {
-                    this.isDark = !this.isDark;
-                    localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
-                    document.documentElement.classList.toggle('dark', this.isDark);
-                }
-            });
-
-            // --- Push Notification Component ---
-            Alpine.data('pushNotificationPermission', () => ({
-                showPermissionModal: false,
-                loading: false,
-                message: '',
-                storageKey: 'sarpras-notification-prompt',
-
-                async init() {
-                    if (!@js(auth()->check())) return;
-                    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
-                    if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
-                    if (localStorage.getItem(this.storageKey) === 'dismissed') return;
-
-                    setTimeout(() => {
-                        this.showPermissionModal = true;
-                    }, 1200);
-                },
-
-                decline() {
-                    localStorage.setItem(this.storageKey, 'dismissed');
-                    this.showPermissionModal = false;
-                },
-
-                async enable() {
-                    this.loading = true;
-                    this.message = '';
-
-                    try {
-                        const permission = await Notification.requestPermission();
-
-                        if (permission !== 'granted') {
-                            localStorage.setItem(this.storageKey, 'dismissed');
-                            this.showPermissionModal = false;
-                            return;
-                        }
-
-                        const registration = await navigator.serviceWorker.ready;
-                        const publicKey = @js(config('webpush.vapid.public_key') ?: env('VAPID_PUBLIC_KEY'));
-
-                        if (!publicKey) {
-                            throw new Error('VAPID public key belum dikonfigurasi.');
-                        }
-
-                        const subscription = await registration.pushManager.subscribe({
-                            userVisibleOnly: true,
-                            applicationServerKey: this.urlBase64ToUint8Array(publicKey)
-                        });
-
-                        const key = subscription.getKey('p256dh');
-                        const auth = subscription.getKey('auth');
-
-                        if (!key || !auth) {
-                            throw new Error('Subscription browser tidak lengkap.');
-                        }
-
-                        const response = await fetch('{{ route('push-subscriptions.store') }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                            },
-                            body: JSON.stringify({
-                                endpoint: subscription.endpoint,
-                                publicKey: this.arrayBufferToBase64(key),
-                                authToken: this.arrayBufferToBase64(auth),
-                                contentEncoding: 'aes128gcm'
-                            })
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Subscription gagal disimpan ke server.');
-                        }
-
-                        localStorage.setItem(this.storageKey, 'enabled');
-                        this.showPermissionModal = false;
-                        window.dispatchEvent(new CustomEvent('push-notification-enabled'));
-                    } catch (error) {
-                        console.error('Push notification error:', error);
-                        this.message = error.message || 'Notifikasi gagal diaktifkan.';
-                    } finally {
-                        this.loading = false;
-                    }
-                },
-
-                urlBase64ToUint8Array(base64String) {
-                    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-                    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-                    const rawData = window.atob(base64);
-                    return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
-                },
-
-                arrayBufferToBase64(buffer) {
-                    return btoa(String.fromCharCode(...new Uint8Array(buffer)));
-                }
-            }));
+            toggle() {
+                this.isDark = !this.isDark;
+                localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
+                document.documentElement.classList.toggle('dark', this.isDark);
+            }
         });
 
-        // --- Service Worker Registration ---
-        async function registerServiceWorker() {
-            if (!('serviceWorker' in navigator)) return null;
+        // --- Push Notification Component ---
+        Alpine.data('pushNotificationPermission', () => ({
+            showPermissionModal: false,
+            loading: false,
+            message: '',
+            storageKey: 'sarpras-notification-prompt',
 
-            try {
-                const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-                console.log('Service Worker aktif:', registration.scope);
-                return registration;
-            } catch (error) {
-                console.error('Service Worker gagal:', error);
-                return null;
-            }
-        }
+            async init() {
+                if (!@js(auth()->check())) return;
+                
+                // Di iPhone biasa (bukan dari home screen), PushManager belum tersedia. Ini normal.
+                if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+                if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
+                if (localStorage.getItem(this.storageKey) === 'dismissed') return;
 
-        window.sarprasRegisterServiceWorker = registerServiceWorker;
+                setTimeout(() => {
+                    this.showPermissionModal = true;
+                }, 1200);
+            },
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', registerServiceWorker, { once: true });
-        } else {
-            registerServiceWorker();
-        }
+            decline() {
+                localStorage.setItem(this.storageKey, 'dismissed');
+                this.showPermissionModal = false;
+            },
 
-        document.addEventListener('livewire:navigated', registerServiceWorker);
+            async enable() {
+                this.loading = true;
+                this.message = '';
 
-        // --- PWA Installation Logic ---
-        if (!window.__sarprasPwaInitialized) {
-            window.__sarprasPwaInitialized = true;
+                try {
+                    const permission = await Notification.requestPermission();
 
-            window.pwaInstall = {
-                deferredPrompt: null,
+                    if (permission !== 'granted') {
+                        localStorage.setItem(this.storageKey, 'dismissed');
+                        this.showPermissionModal = false;
+                        return;
+                    }
 
-                init() {
-                    window.addEventListener('beforeinstallprompt', event => {
-                        event.preventDefault();
-                        this.deferredPrompt = event;
-                        window.dispatchEvent(new CustomEvent('pwa-install-available'));
+                    const registration = await navigator.serviceWorker.ready;
+                    const publicKey = @js(config('webpush.vapid.public_key') ?: env('VAPID_PUBLIC_KEY'));
+
+                    if (!publicKey) {
+                        throw new Error('VAPID public key belum dikonfigurasi.');
+                    }
+
+                    const subscription = await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: this.urlBase64ToUint8Array(publicKey)
                     });
 
-                    window.addEventListener('appinstalled', () => {
-                        this.deferredPrompt = null;
-                        window.dispatchEvent(new CustomEvent('pwa-installed'));
+                    const key = subscription.getKey('p256dh');
+                    const auth = subscription.getKey('auth');
+
+                    if (!key || !auth) {
+                        throw new Error('Subscription browser tidak lengkap.');
+                    }
+
+                    const response = await fetch('{{ route('push-subscriptions.store') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            endpoint: subscription.endpoint,
+                            publicKey: this.arrayBufferToBase64(key),
+                            authToken: this.arrayBufferToBase64(auth),
+                            contentEncoding: 'aes128gcm'
+                        })
                     });
-                },
 
-                async install() {
-                    if (!this.deferredPrompt) return;
+                    if (!response.ok) {
+                        throw new Error('Subscription gagal disimpan ke server.');
+                    }
 
-                    const promptEvent = this.deferredPrompt;
-                    this.deferredPrompt = null;
-
-                    await promptEvent.prompt();
-                    await promptEvent.userChoice;
+                    localStorage.setItem(this.storageKey, 'enabled');
+                    this.showPermissionModal = false;
+                    window.dispatchEvent(new CustomEvent('push-notification-enabled'));
+                } catch (error) {
+                    console.error('Push notification error:', error);
+                    this.message = error.message || 'Notifikasi gagal diaktifkan.';
+                } finally {
+                    this.loading = false;
                 }
-            };
+            },
 
-            window.pwaInstall.init();
+            urlBase64ToUint8Array(base64String) {
+                const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+                const rawData = window.atob(base64);
+                return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+            },
+
+            arrayBufferToBase64(buffer) {
+                return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+            }
+        }));
+    });
+
+    // --- Service Worker Registration ---
+    async function registerServiceWorker() {
+        if (!('serviceWorker' in navigator)) return null;
+        try {
+            return await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        } catch (error) {
+            return null;
         }
+    }
+    window.sarprasRegisterServiceWorker = registerServiceWorker;
 
-        // --- Check Standalone Display Mode ---
-        const checkStandalone = () => {
-            const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-            if (standalone) {
-                window.dispatchEvent(new CustomEvent('pwa-installed'));
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', registerServiceWorker, { once: true });
+    } else {
+        registerServiceWorker();
+    }
+    document.addEventListener('livewire:navigated', registerServiceWorker);
+
+    // --- Deteksi Lingkungan (iOS / Standalone) ---
+    const isIos = () => {
+        const userAgent = window.navigator.userAgent.toLowerCase();
+        return /iphone|ipad|ipod/.test(userAgent);
+    };
+    
+    // Apakah dibuka via Safari (bukan dari ikon Home Screen)
+    const isIosBrowser = isIos() && !window.navigator.standalone; 
+
+    // --- PWA Installation Logic ---
+    if (!window.__sarprasPwaInitialized) {
+        window.__sarprasPwaInitialized = true;
+
+        window.pwaInstall = {
+            deferredPrompt: null,
+
+            init() {
+                // Event standard untuk Android / Chrome
+                window.addEventListener('beforeinstallprompt', event => {
+                    event.preventDefault();
+                    this.deferredPrompt = event;
+                    window.dispatchEvent(new CustomEvent('pwa-install-available'));
+                });
+
+                window.addEventListener('appinstalled', () => {
+                    this.deferredPrompt = null;
+                    window.dispatchEvent(new CustomEvent('pwa-installed'));
+                });
+
+                // HACK UNTUK iOS: Beri tahu Alpine/Blade bahwa tombol install boleh dimunculkan
+                if (isIosBrowser) {
+                    setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('pwa-install-available'));
+                    }, 500);
+                }
+            },
+
+            async install() {
+                // Jika user pakai iPhone, tampilkan instruksi manual karena Apple tidak mendukung prompt otomatis
+                if (isIosBrowser) {
+                    alert('Untuk menginstal aplikasi di iPhone:\n\n1. Tekan tombol Share (ikon kotak dengan panah ke atas) di menu bawah.\n2. Geser dan pilih "Add to Home Screen" (Tambahkan ke Layar Utama).');
+                    return;
+                }
+
+                // Logic standard untuk Android
+                if (!this.deferredPrompt) return;
+                const promptEvent = this.deferredPrompt;
+                this.deferredPrompt = null;
+
+                await promptEvent.prompt();
+                await promptEvent.userChoice;
+            }
+        };
+
+        window.pwaInstall.init();
+    }
+
+    // --- Check Standalone Display Mode ---
+    var checkStandalone = () => {
+        const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        if (standalone) {
+            window.dispatchEvent(new CustomEvent('pwa-installed'));
             }
         };
 
