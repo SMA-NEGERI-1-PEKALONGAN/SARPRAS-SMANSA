@@ -934,21 +934,81 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
                     : collect()
             );
 
-        $resources = $baseQuery
-            ->orderBy($isRoom ? 'nama_ruangan' : 'nama_barang')
-            ->paginate(8);
-
         $startDate = Carbon::parse($this->dateFilter)->startOfDay();
         $endDate = Carbon::parse($this->dateFilter)->endOfDay();
-        $activeStatuses = ['Menunggu', 'Disetujui', 'Dipinjam'];
 
-        $resources->through(function ($resource) use ($startDate, $endDate, $activeStatuses, $isRoom) {
+        $priorityStatuses = ['Menunggu', 'Disetujui'];
+
+        if ($isRoom) {
+            $bookingQuery = BorrowingDetail::query()
+                ->select('borrowing_details.room_id')
+                ->selectRaw('COUNT(*) as booking_count')
+                ->selectRaw('MIN(borrowings.tanggal_mulai) as nearest_booking')
+                ->join(
+                    'borrowings',
+                    'borrowings.id',
+                    '=',
+                    'borrowing_details.borrowing_id'
+                )
+                ->whereIn('borrowings.status', $priorityStatuses)
+                ->where('borrowings.tanggal_mulai', '<', $endDate)
+                ->where('borrowings.tanggal_selesai', '>', $startDate)
+                ->groupBy('borrowing_details.room_id');
+
+            $baseQuery
+                ->leftJoinSub(
+                    $bookingQuery,
+                    'room_booking_stats',
+                    function ($join) {
+                        $join->on(
+                            'rooms.id',
+                            '=',
+                            'room_booking_stats.room_id'
+                        );
+                    }
+                )
+                ->select('rooms.*')
+                ->selectRaw(
+                    'COALESCE(room_booking_stats.booking_count, 0) as booking_count'
+                )
+                ->selectRaw(
+                    'room_booking_stats.nearest_booking as nearest_booking'
+                )
+                ->orderByRaw(
+                    'CASE WHEN room_booking_stats.nearest_booking IS NULL THEN 1 ELSE 0 END'
+                )
+                ->orderBy('nearest_booking')
+                ->orderByDesc('booking_count')
+                ->orderBy('nama_ruangan');
+
+        } else {
+            $baseQuery->orderBy('nama_barang');
+        }
+
+        $resources = $baseQuery->paginate(8);
+
+        $activeStatuses = [
+            'Menunggu',
+            'Disetujui',
+            'Dipinjam',
+        ];
+
+        $resources->through(function ($resource) use (
+            $startDate,
+            $endDate,
+            $activeStatuses,
+            $isRoom
+        ) {
             $item = $isRoom
                 ? $this->mapRoom($resource)
                 : $this->mapItem($resource);
 
             $detailQuery = BorrowingDetail::query()
-                ->whereHas('borrowing', function ($q) use ($startDate, $endDate, $activeStatuses) {
+                ->whereHas('borrowing', function ($q) use (
+                    $startDate,
+                    $endDate,
+                    $activeStatuses
+                ) {
                     $q->whereIn('status', $activeStatuses)
                         ->where('tanggal_mulai', '<', $endDate)
                         ->where('tanggal_selesai', '>', $startDate);
@@ -960,15 +1020,22 @@ new #[Layout('layouts.user')] #[Title('Eksplorasi Peminjaman')] class extends Co
                     ->count();
 
                 $item['booked_count'] = $count;
-                $item['status_label'] = $count > 0 ? 'Ada Jadwal' : 'Tersedia';
+                $item['status_label'] = $count > 0
+                    ? 'Ada Jadwal'
+                    : 'Tersedia';
             } else {
                 $used = (int) (clone $detailQuery)
                     ->where('item_id', $resource->id)
                     ->sum('jumlah');
 
                 $item['booked_count'] = $used;
-                $item['available_qty'] = max(0, $item['kapasitas'] - $used);
-                $item['status_label'] = $item['available_qty'] > 0 ? 'Tersedia' : 'Stok Habis';
+                $item['available_qty'] = max(
+                    0,
+                    $item['kapasitas'] - $used
+                );
+                $item['status_label'] = $item['available_qty'] > 0
+                    ? 'Tersedia'
+                    : 'Stok Habis';
             }
 
             return $item;

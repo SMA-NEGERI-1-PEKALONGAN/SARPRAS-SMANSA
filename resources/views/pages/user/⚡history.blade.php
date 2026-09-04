@@ -152,6 +152,7 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
         //     'is_read' => false,
         // ]);
     }
+
     public function openDetail(int $id): void
     {
         $this->loadBorrowing($id);
@@ -249,6 +250,7 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
                 'code' => $detail->room?->kode_ruangan ?? $detail->item?->kode_barang ?? '-',
                 'jumlah' => (int) $detail->jumlah,
                 'status' => $detail->status,
+                'catatan' => $detail->getAttribute('catatan') ?? '',
                 'fasilitas' => $detail->room
                     ? $this->parseFacilities($detail->getAttribute('fasilitas'))
                     : [],
@@ -966,8 +968,35 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
                                 <p class="text-[9px] text-slate-400">Tujuan penggunaan fasilitas.</p>
                             </div>
                         </div>
-                        <div class="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3.5 text-[11px] leading-relaxed text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300 sm:text-xs">
-                            {{ $selectedBorrowing['tujuan'] ?? '-' }}
+                        <div class="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                            <div class="rounded-2xl border border-slate-200 bg-white p-3.5 dark:border-slate-800 dark:bg-slate-800/60">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-salte-100 text-salte-600 dark:bg-salte-500/10 dark:text-salte-400">
+                                        <i class="text-xs fa-solid fa-bullseye"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="text-[10px] font-extrabold text-salte-800 sm:text-xs dark:text-salte-200">Tujuan</div>
+                                        <div class="mt-1 text-[10px] leading-relaxed text-salte-800 sm:text-xs dark:text-salte-200">
+                                            {{ $selectedBorrowing['tujuan'] ?? 'Tidak ada catatan admin.' }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                            <div class="rounded-2xl border border-slate-200 bg-white p-3.5 dark:border-slate-800 dark:bg-slate-800/60">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-salte-100 text-salte-600 dark:bg-salte-500/10 dark:text-salte-400">
+                                        <i class="text-xs fa-solid fa-note-sticky"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="text-[10px] font-extrabold text-salte-800 sm:text-xs dark:text-salte-200">Catatan Peminjaman</div>
+                                        <div class="mt-1 text-[10px] leading-relaxed text-salte-800 sm:text-xs dark:text-salte-200">
+                                            {{ $selectedBorrowing['catatan'] ?? 'Tidak ada catatan admin.' }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            </div>
                         </div>
                     </section>
 
@@ -1226,27 +1255,6 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
     </div>
     </template>
 
-
-    {{-- MODAL BATAL --}}
-    <template x-teleport="body">
-        <div x-data="{ open: @entangle('isCancelModalOpen') }" x-show="open" x-cloak class="fixed inset-0 z-[130] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"></div>
-            <div x-show="open" x-transition class="relative w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
-                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-500 dark:bg-rose-900/30"><i class="text-xl fa-solid fa-triangle-exclamation"></i></div>
-                <h3 class="mt-4 text-center text-lg font-bold text-slate-900 dark:text-white">Batalkan Pengajuan?</h3>
-                @error('cancel')<div class="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-600 dark:bg-rose-900/20 dark:text-rose-300">{{ $message }}</div>@enderror
-                <p class="mt-2 text-center text-sm leading-relaxed text-slate-500 dark:text-slate-400">Apakah Anda yakin ingin membatalkan pengajuan <b>{{ $selectedBorrowing['kode_transaksi'] ?? '-' }}</b>?</p>
-                    <div class="mt-6 grid grid-cols-2 gap-3">
-                        <button type="button" wire:click="closeCancel" class="rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200">Kembali</button>
-                        <button type="button" wire:click="cancelBorrowing" wire:loading.attr="disabled" wire:target="cancelBorrowing" class="rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60">
-                            <span wire:loading.remove wire:target="cancelBorrowing">Ya, Batalkan</span>
-                            <span wire:loading wire:target="cancelBorrowing"><i class="mr-1 fa-solid fa-spinner animate-spin"></i>Memproses...</span>
-                        </button>
-                    </div>
-            </div>
-        </div>
-    </template>
-
     {{-- MODAL PENGEMBALIAN --}}
     <template x-teleport="body">
         <div x-data="{ open: @entangle('isReturnModalOpen') }" x-show="open" x-cloak class="fixed inset-0 z-[140] flex items-center justify-center p-2 sm:p-4">
@@ -1279,8 +1287,66 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
                             </div>
                         </div>
                     </div>
-
                     <div>
+                        
+                        <div class="space-y-5 mb-3">
+                            <section>
+                                    <div class="mb-2.5 flex items-center gap-2">
+                                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                                            <i class="text-[10px] fa-solid fa-bullseye"></i>
+                                        </span>
+                                        <div>
+                                            <h3 class="text-xs font-extrabold text-slate-800 sm:text-sm dark:text-white">Tujuan / Keperluan</h3>
+                                            <p class="text-[9px] text-slate-400">Tujuan penggunaan fasilitas.</p>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                                        <div class="rounded-2xl border border-slate-200 bg-white p-3.5 dark:border-slate-800 dark:bg-slate-800/60">
+                                            <div class="flex items-start gap-3">
+                                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-salte-100 text-salte-600 dark:bg-salte-500/10 dark:text-salte-400">
+                                                    <i class="text-xs fa-solid fa-bullseye"></i>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <div class="text-[10px] font-extrabold text-salte-800 sm:text-xs dark:text-salte-200">Tujuan</div>
+                                                    <div class="mt-1 text-[10px] leading-relaxed text-salte-800 sm:text-xs dark:text-salte-200">
+                                                        {{ $selectedBorrowing['tujuan'] ?? 'Tidak ada catatan admin.' }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                        </div>
+                                        <div class="rounded-2xl border border-slate-200 bg-white p-3.5 dark:border-slate-800 dark:bg-slate-800/60">
+                                            <div class="flex items-start gap-3">
+                                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-salte-100 text-salte-600 dark:bg-salte-500/10 dark:text-salte-400">
+                                                    <i class="text-xs fa-solid fa-note-sticky"></i>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <div class="text-[10px] font-extrabold text-salte-800 sm:text-xs dark:text-salte-200">Catatan Peminjaman</div>
+                                                    <div class="mt-1 text-[10px] leading-relaxed text-salte-800 sm:text-xs dark:text-salte-200">
+                                                        {{ $selectedBorrowing['catatan'] ?? 'Tidak ada catatan admin.' }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                        </div>
+                                    </div>
+                            </section>
+                            <section>
+                                    <div class="rounded-2xl border border-amber-200/70 bg-amber-50/70 p-3.5 dark:border-amber-900/40 dark:bg-amber-900/15">
+                                        <div class="flex items-start gap-3">
+                                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+                                                <i class="text-xs fa-solid fa-note-sticky"></i>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="text-[10px] font-extrabold text-amber-800 sm:text-xs dark:text-amber-200">Catatan Admin</div>
+                                                <div class="mt-1 text-[10px] leading-relaxed text-amber-800 sm:text-xs dark:text-amber-200">
+                                                    {{ $selectedBorrowing['catatan_admin'] ?? 'Tidak ada catatan admin.' }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                            </section>
+                        </div>
                         <div class="mb-3 flex items-end justify-between gap-3">
                             <div>
                                 <h4 class="text-xs font-extrabold text-slate-800 sm:text-sm dark:text-white">Fasilitas yang Dikembalikan</h4>
@@ -1288,7 +1354,6 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
                             </div>
                             <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ count($returnDetails) }} item</span>
                         </div>
-
                         <div class="space-y-3 md:hidden">
                             @forelse($returnDetails as $index => $detail)
                                 <div wire:key="return-mobile-{{ $detail['id'] }}" class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-800/60">
@@ -1363,14 +1428,21 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
                                                 <span class="mt-1 block text-[9px] font-semibold text-rose-500">{{ $message }}</span>
                                             @enderror
                                         </div>
-
-                                        <div class="mt-3">
-                                            <label class="mb-1.5 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400">Catatan Pengembalian</label>
-                                            <input type="text" wire:model="returnNotes.{{ $index }}" placeholder="Tuliskan kondisi atau catatan..." class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[10px] outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white">
-                                            @error('returnNotes.'.$index)
-                                                <span class="mt-1 block text-[9px] font-semibold text-rose-500">{{ $message }}</span>
-                                            @enderror
+                                        <div class="mt-3 grid grid-cols-2 gap-2">
+                                            <div class="">
+                                                <label class="mb-1.5 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400">Catatan Admin</label>
+                                                <input type="text"  placeholder="Tuliskan kondisi atau catatan..." class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[10px] outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white" value="{{ $detail['catatan'] }}" disabled>
+                                                
+                                            </div>
+                                            <div class="">
+                                                <label class="mb-1.5 block text-[9px] font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400">Catatan Pengembalian</label>
+                                                <input type="text" wire:model="returnNotes.{{ $index }}" placeholder="Tuliskan kondisi atau catatan..." class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[10px] outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white">
+                                                @error('returnNotes.'.$index)
+                                                    <span class="mt-1 block text-[9px] font-semibold text-rose-500">{{ $message }}</span>
+                                                @enderror
+                                            </div>
                                         </div>
+                                        
                                     </div>
                                 </div>
                             @empty
@@ -1383,6 +1455,7 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
                             @endforelse
                         </div>
 
+                        
                         <div class="hidden overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 md:block">
                             <div class="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-800/70">
                                 <div class="flex items-center gap-2 text-[9px] font-semibold text-slate-400">
@@ -1401,8 +1474,9 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
                                             <th class="px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Nama</th>
                                             <th class="px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Fasilitas</th>
                                             <th class="px-4 py-3 text-center font-extrabold uppercase tracking-wide text-slate-400">Jumlah</th>
+                                            <th class="min-w-[260px] px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Catatan(admin)</th>
+                                            <th class="min-w-[260px] px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Catatan Pengembalian</th>
                                             <th class="min-w-[290px] px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Bukti Pengembalian</th>
-                                            <th class="min-w-[260px] px-4 py-3 font-extrabold uppercase tracking-wide text-slate-400">Catatan</th>
                                         </tr>
                                     </thead>
 
@@ -1437,7 +1511,18 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
                                                 </td>
 
                                                 <td class="px-4 py-4 text-center font-extrabold text-slate-800 dark:text-white">{{ $detail['jumlah'] }}</td>
-
+                                                {{-- catatan admin view only --}}
+                                                <td class="px-4 py-4">
+                                                    <div class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[10px] outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                                                        {{ $detail['catatan'] }}
+                                                    </div>
+                                                </td>
+                                                <td class="px-4 py-4">
+                                                    <input type="text" wire:model="returnNotes.{{ $index }}" placeholder="Catatan item..." class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[10px] outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                                                    @error('returnNotes.'.$index)
+                                                        <span class="mt-1 block text-[9px] font-semibold text-rose-500">{{ $message }}</span>
+                                                    @enderror
+                                                </td>
                                                 <td class="px-4 py-4">
                                                     <input type="file" wire:model="returnUploads.{{ $index }}" data-compress-return accept="application/pdf,image/*" class="block w-full text-[10px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-[10px] file:font-bold file:text-brand-700 dark:file:bg-brand-900/30 dark:file:text-brand-300">
                                                     <p class="mt-1.5 flex items-start gap-1.5 text-[9px] leading-relaxed text-slate-400">
@@ -1461,17 +1546,10 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
                                                         <span class="mt-1 block text-[9px] font-semibold text-rose-500">{{ $message }}</span>
                                                     @enderror
                                                 </td>
-
-                                                <td class="px-4 py-4">
-                                                    <input type="text" wire:model="returnNotes.{{ $index }}" placeholder="Catatan item..." class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[10px] outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-                                                    @error('returnNotes.'.$index)
-                                                        <span class="mt-1 block text-[9px] font-semibold text-rose-500">{{ $message }}</span>
-                                                    @enderror
-                                                </td>
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="7" class="p-10 text-center">
+                                                <td colspan="8" class="p-10 text-center">
                                                     <div class="flex flex-col items-center">
                                                         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-300 dark:bg-slate-800 dark:text-slate-600">
                                                             <i class="text-sm fa-solid fa-inbox"></i>
@@ -1524,8 +1602,28 @@ new #[Layout('layouts.user')] #[Title('Riwayat Peminjaman')] class extends Compo
                     </div>
                 </div>
             </form>
+            </div>
         </div>
-    </div>
+    </template>
+
+    {{-- MODAL BATAL --}}
+    <template x-teleport="body">
+        <div x-data="{ open: @entangle('isCancelModalOpen') }" x-show="open" x-cloak class="fixed inset-0 z-[130] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"></div>
+            <div x-show="open" x-transition class="relative w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-500 dark:bg-rose-900/30"><i class="text-xl fa-solid fa-triangle-exclamation"></i></div>
+                <h3 class="mt-4 text-center text-lg font-bold text-slate-900 dark:text-white">Batalkan Pengajuan?</h3>
+                @error('cancel')<div class="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-600 dark:bg-rose-900/20 dark:text-rose-300">{{ $message }}</div>@enderror
+                <p class="mt-2 text-center text-sm leading-relaxed text-slate-500 dark:text-slate-400">Apakah Anda yakin ingin membatalkan pengajuan <b>{{ $selectedBorrowing['kode_transaksi'] ?? '-' }}</b>?</p>
+                    <div class="mt-6 grid grid-cols-2 gap-3">
+                        <button type="button" wire:click="closeCancel" class="rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200">Kembali</button>
+                        <button type="button" wire:click="cancelBorrowing" wire:loading.attr="disabled" wire:target="cancelBorrowing" class="rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60">
+                            <span wire:loading.remove wire:target="cancelBorrowing">Ya, Batalkan</span>
+                            <span wire:loading wire:target="cancelBorrowing"><i class="mr-1 fa-solid fa-spinner animate-spin"></i>Memproses...</span>
+                        </button>
+                    </div>
+            </div>
+        </div>
     </template>
 
     {{-- MODAL PRINT --}}

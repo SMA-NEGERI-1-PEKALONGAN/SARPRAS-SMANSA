@@ -44,6 +44,8 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
         'tujuan' => '',
         'rooms' => [ ['room_id' => ''] ],
         'items' => [ ['item_id' => '', 'jumlah' => 0] ],
+        'catatan' => '',
+        'catatan_admin' => '',
     ];
     public bool $isApprovalModalOpen = false;
     public ?int $approvalBorrowingId = null;
@@ -483,9 +485,16 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
             ->selectSub($pendingSubquery, 'pending_count')
             ->selectSub($activeSubquery, 'total_active_count')
             ->selectSub($earliestSubquery, 'earliest_booking_date')
-            ->orderByDesc('pending_count')
-            ->orderByRaw('earliest_booking_date IS NULL')
+            ->orderByRaw("
+                CASE
+                    WHEN pending_count > 0 THEN 0
+                    WHEN earliest_booking_date IS NOT NULL THEN 1
+                    ELSE 2
+                END
+            ")
             ->orderBy('earliest_booking_date')
+            ->orderByDesc('pending_count')
+            ->orderByDesc('total_active_count')
             ->orderBy($nameColumn)
             ->paginate(9, ['*'], 'resourcesPage');
 
@@ -846,13 +855,14 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
 
                 $borrowing->catatan = trim($this->catatan) ?: null;
                 $borrowing->catatan_admin = trim($this->catatan_admin) ?: null;
-
+                
                 if ($isApproval && Schema::hasColumn('borrowings', 'approved_by')) {
                     $borrowing->approved_by = auth()->id();
                 }
-
-                $borrowing->refresh()->load('details');
+                
+                // $borrowing->refresh()->load('details'); 
                 $this->syncBorrowingStatus($borrowing);
+                // dd($borrowing); 
                 $borrowing->save();
             });
 
@@ -1209,7 +1219,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
                 if ($this->editFile && Schema::hasColumn('borrowings', 'file_lampiran')) {
                     $borrowing->file_lampiran = $this->editFile->store('bukti-peminjaman', 'public');
                 }
-
+                // check data apasaja yang diubah 
                 $borrowing->save();
 
                 $detailsById = $borrowing->details->keyBy('id');
@@ -1560,6 +1570,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
     </div>
 
     <div class="mt-8">{{ $resources->links() }}</div>
+
     <section x-data="{ open: @entangle('isScheduleModalOpen') }">
         <template x-teleport="body">
             <div x-show="open" class="fixed inset-0 z-999 flex items-center justify-center p-4" x-cloak>
@@ -1662,6 +1673,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
             </div>
         </template>
     </section>
+
     <section x-data="{ open: @entangle('isDetailModalOpen') }">
         <template x-teleport="body">
             <div x-show="open" x-cloak class="fixed inset-0 z-[9991] flex items-center justify-center p-3 sm:p-4">
@@ -2277,6 +2289,7 @@ new #[Layout('layouts.app')] #[Title('Dashboard Peminjaman Grid')] class extends
             </div>
         </template>
     </section>
+
     <section x-data="{ open: @entangle('isAddModalOpen') }">
         <template x-teleport="body">
             <div x-show="open" x-cloak class="fixed inset-0 z-[9994] flex items-center justify-center p-3 sm:p-4">
