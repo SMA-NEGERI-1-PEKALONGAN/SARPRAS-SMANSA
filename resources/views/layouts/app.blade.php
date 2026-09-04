@@ -1,3 +1,17 @@
+@auth
+    @php
+        $notificationUnreadCount = \App\Models\SystemNotification::query()
+            ->where('user_id', auth()->id())
+            ->where('is_read', false)
+            ->count();
+
+        $notifications = \App\Models\SystemNotification::query()
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->limit(10)
+            ->get();
+    @endphp
+@endauth
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full scroll-smooth">
 
@@ -11,6 +25,16 @@
 
     {{-- Fonts & Icons --}}
     <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
+    
+    {{-- pusher notification --}}
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    {{-- <meta name="theme-color" content="#2563eb"> --}}
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SARPRAS SMANSA">
+    <link rel="apple-touch-icon" href="{{ asset('img/icons/icon-192x192.png') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -333,6 +357,217 @@
         </div>
     </div>
 
+    {{-- pusher norification --}}
+    <div x-data="pushNotificationPermission()" x-init="init()" x-show="showPermissionModal" x-cloak @keydown.escape.window="showPermissionModal = false" class="fixed inset-0 z-[9998] flex items-center justify-center p-3 sm:p-4">
+        <div
+            x-show="showPermissionModal"
+            x-transition.opacity
+            class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+        ></div>
+
+        <div
+            x-show="showPermissionModal"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+            x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+            class="relative flex w-full max-w-md max-h-[calc(100dvh-1.5rem)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900 sm:max-h-[calc(100dvh-2rem)] sm:rounded-3xl"
+        >
+            <div class="overflow-y-auto overscroll-contain">
+                <div class="p-4 sm:p-6 md:p-7">
+
+                    <div class="flex h-14 w-14 items-center justify-center mx-auto rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 sm:h-16 sm:w-16">
+                        <i class="text-xl sm:text-2xl fa-solid fa-bell"></i>
+                    </div>
+
+                    <div class="mt-4 text-center sm:mt-5">
+                        <h2 class="text-lg font-bold leading-tight text-slate-900 dark:text-white sm:text-xl">
+                            Aktifkan Notifikasi
+                        </h2>
+
+                        <p class="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-slate-500 dark:text-slate-400 sm:text-sm">
+                            Dapatkan pemberitahuan langsung ketika pengajuan peminjaman Anda disetujui, ditolak, atau selesai diproses.
+                        </p>
+                    </div>
+
+                    <div class="mt-5 space-y-2.5 sm:mt-6 sm:space-y-3">
+
+                        <div class="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800 sm:rounded-2xl sm:p-3.5">
+                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 sm:h-9 sm:w-9 sm:rounded-xl">
+                                <i class="text-[11px] fa-solid fa-check"></i>
+                            </div>
+
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[11px] font-bold leading-tight text-slate-800 dark:text-slate-200 sm:text-xs">
+                                    Status peminjaman
+                                </p>
+
+                                <p class="mt-1 text-[9px] leading-relaxed text-slate-500 dark:text-slate-400 sm:text-[10px]">
+                                    Anda akan mengetahui perubahan status tanpa harus membuka halaman riwayat.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800 sm:rounded-2xl sm:p-3.5">
+                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 sm:h-9 sm:w-9 sm:rounded-xl">
+                                <i class="text-[11px] fa-solid fa-mobile-screen-button"></i>
+                            </div>
+
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[11px] font-bold leading-tight text-slate-800 dark:text-slate-200 sm:text-xs">
+                                    Langsung ke perangkat
+                                </p>
+
+                                <p class="mt-1 text-[9px] leading-relaxed text-slate-500 dark:text-slate-400 sm:text-[10px]">
+                                    Notifikasi dapat diterima di HP atau komputer yang telah diaktifkan.
+                                </p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="mt-5 grid grid-cols-1 gap-2.5 sm:mt-6 sm:grid-cols-2">
+
+                        <button
+                            type="button"
+                            @click="decline()"
+                            class="flex min-h-[44px] items-center justify-center rounded-xl bg-slate-100 px-4 py-3 text-xs font-bold text-slate-600 transition hover:bg-slate-200 active:scale-[0.98] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 sm:text-sm"
+                        >
+                            Nanti
+                        </button>
+
+                        <button
+                            type="button"
+                            @click="enable()"
+                            :disabled="loading"
+                            class="flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-xs font-bold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60 sm:text-sm"
+                        >
+                            <span
+                                x-show="!loading"
+                                class="inline-flex items-center justify-center gap-1.5"
+                            >
+                                <i class="text-[11px] fa-solid fa-bell"></i>
+                                <span>Aktifkan</span>
+                            </span>
+
+                            <span
+                                x-show="loading"
+                                class="inline-flex items-center justify-center gap-1.5"
+                            >
+                                <i class="text-[11px] fa-solid fa-spinner animate-spin"></i>
+                                <span>Mengaktifkan...</span>
+                            </span>
+                        </button>
+
+                    </div>
+
+                    <div
+                        x-show="message"
+                        x-transition
+                        class="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-center text-[9px] font-medium leading-relaxed text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 sm:text-[10px]"
+                    >
+                        <span x-text="message"></span>
+                    </div>
+
+                    <div class="mt-4 text-center">
+                        <p class="text-[8px] leading-relaxed text-slate-400 sm:text-[9px]">
+                            Anda dapat mengubah izin notifikasi kapan saja melalui pengaturan browser.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div x-data="{ open: false }" x-on:pwa-ios-install-available.window="open = true" x-on:pwa-ios-install-guide.window="open = true" x-on:pwa-installed.window="open = false" x-show="open" x-cloak class="fixed inset-0 z-[9997] flex items-center justify-center p-4">
+        <div x-show="open" x-transition.opacity class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"></div>
+
+        <div x-show="open" x-transition class="relative w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
+            <div class="p-5 sm:p-6">
+
+                <div class="flex h-14 w-14 mx-auto items-center justify-center rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                    <i class="text-xl fa-solid fa-mobile-screen-button"></i>
+                </div>
+
+                <div class="mt-4 text-center">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white">
+                        Pasang Aplikasi
+                    </h2>
+
+                    <p class="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                        Pada iPhone, aplikasi dipasang melalui menu Bagikan di Safari.
+                    </p>
+                </div>
+
+                <div class="mt-5 space-y-3">
+
+                    <div class="flex items-start gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-slate-800">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                            <span class="text-xs font-black">1</span>
+                        </div>
+
+                        <div class="min-w-0">
+                            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                Tekan tombol Bagikan
+                            </p>
+
+                            <p class="mt-1 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
+                                Di Safari, tekan ikon
+                                <i class="mx-0.5 fa-solid fa-arrow-up-from-bracket text-blue-500"></i>
+                                Bagikan.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-slate-800">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+                            <span class="text-xs font-black">2</span>
+                        </div>
+
+                        <div class="min-w-0">
+                            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                Pilih Tambah ke Layar Utama
+                            </p>
+
+                            <p class="mt-1 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
+                                Pilih <b>Tambah ke Layar Utama</b>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-slate-800">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400">
+                            <span class="text-xs font-black">3</span>
+                        </div>
+
+                        <div class="min-w-0">
+                            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                Buka sebagai Aplikasi Web
+                            </p>
+
+                            <p class="mt-1 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
+                                Aktifkan <b>Buka sebagai App Web</b> lalu tekan <b>Tambah</b>.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <button
+                    type="button"
+                    @click="open = false"
+                    class="mt-5 flex min-h-[44px] w-full items-center justify-center rounded-xl bg-slate-100 px-4 py-3 text-xs font-bold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                >
+                    Mengerti
+                </button>
+
+            </div>
+        </div>
+    </div>
+    
     <x-toast />
     @livewireScripts
     @stack('scripts')
@@ -340,34 +575,200 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(registration => {
-                        console.log('Service Worker aktif:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.error('Service Worker gagal:', error);
-                    });
-            }
+    <script data-navigate-once>
+        document.addEventListener('alpine:init', () => {
+           
+            // --- Push Notification Component ---
+            Alpine.data('pushNotificationPermission', () => ({
+                showPermissionModal: false,
+                loading: false,
+                message: '',
+                storageKey: 'sarpras-notification-prompt',
+
+                async init() {
+                    if (!@js(auth()->check())) return;
+                    
+                    // Di iPhone biasa (bukan dari home screen), PushManager belum tersedia. Ini normal.
+                    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+                    if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
+                    if (localStorage.getItem(this.storageKey) === 'dismissed') return;
+
+                    setTimeout(() => {
+                        this.showPermissionModal = true;
+                    }, 1200);
+                },
+
+                decline() {
+                    localStorage.setItem(this.storageKey, 'dismissed');
+                    this.showPermissionModal = false;
+                },
+
+                async enable() {
+                    this.loading = true;
+                    this.message = '';
+
+                    try {
+                        const permission = await Notification.requestPermission();
+
+                        if (permission !== 'granted') {
+                            localStorage.setItem(this.storageKey, 'dismissed');
+                            this.showPermissionModal = false;
+                            return;
+                        }
+
+                        const registration = await navigator.serviceWorker.ready;
+                        const publicKey = @js(config('webpush.vapid.public_key') ?: env('VAPID_PUBLIC_KEY'));
+
+                        if (!publicKey) {
+                            throw new Error('VAPID public key belum dikonfigurasi.');
+                        }
+
+                        const subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: this.urlBase64ToUint8Array(publicKey)
+                        });
+
+                        const key = subscription.getKey('p256dh');
+                        const auth = subscription.getKey('auth');
+
+                        if (!key || !auth) {
+                            throw new Error('Subscription browser tidak lengkap.');
+                        }
+
+                        const response = await fetch('{{ route('push-subscriptions.store') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({
+                                endpoint: subscription.endpoint,
+                                publicKey: this.arrayBufferToBase64(key),
+                                authToken: this.arrayBufferToBase64(auth),
+                                contentEncoding: 'aes128gcm'
+                            })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Subscription gagal disimpan ke server.');
+                        }
+
+                        localStorage.setItem(this.storageKey, 'enabled');
+                        this.showPermissionModal = false;
+                        window.dispatchEvent(new CustomEvent('push-notification-enabled'));
+                    } catch (error) {
+                        console.error('Push notification error:', error);
+                        this.message = error.message || 'Notifikasi gagal diaktifkan.';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                urlBase64ToUint8Array(base64String) {
+                    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+                    const rawData = window.atob(base64);
+                    return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+                },
+
+                arrayBufferToBase64(buffer) {
+                    return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+                }
+            }));
         });
 
-        const registerServiceWorker = async () => {
-            if (!('serviceWorker' in navigator)) {
-                return;
-            }
-
+        // --- Service Worker Registration ---
+        async function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) return null;
             try {
-                const registration = await navigator.serviceWorker.register('/sw.js');
-                console.log('Service Worker aktif:', registration.scope);
+                return await navigator.serviceWorker.register('/sw.js', { scope: '/' });
             } catch (error) {
-                console.error('Service Worker gagal:', error);
+                return null;
+            }
+        }
+        window.sarprasRegisterServiceWorker = registerServiceWorker;
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', registerServiceWorker, { once: true });
+        } else {
+            registerServiceWorker();
+        }
+        document.addEventListener('livewire:navigated', registerServiceWorker);
+
+        // --- Deteksi Lingkungan (iOS / Standalone) ---
+        const isIos = () => {
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            return /iphone|ipad|ipod/.test(userAgent);
+        };
+        
+        // Apakah dibuka via Safari (bukan dari ikon Home Screen)
+        const isIosBrowser = isIos() && !window.navigator.standalone; 
+
+        // --- PWA Installation Logic ---
+        if (!window.__sarprasPwaInitialized) {
+            window.__sarprasPwaInitialized = true;
+
+            window.pwaInstall = {
+                deferredPrompt: null,
+
+                init() {
+                    // Event standard untuk Android / Chrome
+                    window.addEventListener('beforeinstallprompt', event => {
+                        event.preventDefault();
+                        this.deferredPrompt = event;
+                        window.dispatchEvent(new CustomEvent('pwa-install-available'));
+                    });
+
+                    window.addEventListener('appinstalled', () => {
+                        this.deferredPrompt = null;
+                        window.dispatchEvent(new CustomEvent('pwa-installed'));
+                    });
+
+                    // HACK UNTUK iOS: Beri tahu Alpine/Blade bahwa tombol install boleh dimunculkan
+                    if (isIosBrowser) {
+                        setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('pwa-install-available'));
+                        }, 500);
+                    }
+                },
+
+                async install() {
+                    // Jika user pakai iPhone, tampilkan instruksi manual karena Apple tidak mendukung prompt otomatis
+                    if (isIosBrowser) {
+                        // alert('Untuk menginstal aplikasi di iPhone:\n\n1. Tekan tombol Share (ikon kotak dengan panah ke atas) di menu bawah.\n2. Geser dan pilih "Add to Home Screen" (Tambahkan ke Layar Utama).');
+                        // return;
+                        window.dispatchEvent(
+                            new CustomEvent('pwa-ios-install-available')
+                        );
+                    }
+
+                    // Logic standard untuk Android
+                    if (!this.deferredPrompt) return;
+                    const promptEvent = this.deferredPrompt;
+                    this.deferredPrompt = null;
+
+                    await promptEvent.prompt();
+                    await promptEvent.userChoice;
+                }
+            };
+
+            window.pwaInstall.init();
+        }
+
+        // --- Check Standalone Display Mode ---
+        var checkStandalone = () => {
+            const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            if (standalone) {
+                window.dispatchEvent(new CustomEvent('pwa-installed'));
             }
         };
 
-        document.addEventListener('DOMContentLoaded', registerServiceWorker);
-        document.addEventListener('livewire:navigated', registerServiceWorker);
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkStandalone, { once: true });
+        } else {
+            checkStandalone();
+        }
     </script>
 </body>
 
